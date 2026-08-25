@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   ShoppingBag,
-  Search,
   Globe,
   Menu as MenuIcon,
   X,
@@ -20,14 +19,11 @@ export const Navbar: React.FC = () => {
     setCurrentView,
     cartItemCount,
     setIsCartOpen,
-    searchQuery,
-    setSearchQuery,
     myDeviceOrders,
     deviceInfo,
   } = useApp();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showSearchBar, setShowSearchBar] = useState(false);
 
   // Exact requested 5 tabs in Navbar:
   // الرئيسية - المنيو - تتبع طلبك - اتصل بنا - عنا
@@ -85,49 +81,6 @@ export const Navbar: React.FC = () => {
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Search */}
-            <div className="relative">
-              {showSearchBar ? (
-                <div className="flex items-center bg-[#18181c] border border-[#282830] rounded-md px-2.5 py-1">
-                  <Search className="w-3.5 h-3.5 text-zinc-400 mr-1.5 rtl:mr-0 rtl:ml-1.5" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      if (currentView !== 'menu') {
-                        setCurrentView('menu');
-                      }
-                    }}
-                    placeholder={t('searchPlaceholder')}
-                    className="bg-transparent border-none text-xs text-white placeholder-zinc-500 focus:outline-none w-32 sm:w-40"
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => {
-                      setShowSearchBar(false);
-                      setSearchQuery('');
-                    }}
-                    className="text-zinc-400 hover:text-zinc-200 cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setShowSearchBar(true);
-                    if (currentView !== 'menu') setCurrentView('menu');
-                  }}
-                  className="p-2 rounded-lg text-zinc-300 hover:text-white hover:bg-[#18181c] transition-colors cursor-pointer"
-                  aria-label="Search"
-                  title={t('searchPlaceholder')}
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
             {/* Language Switch */}
             <button
               onClick={toggleLanguage}
