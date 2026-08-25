@@ -1,0 +1,233 @@
+import React from 'react';
+import { useApp } from '../context/AppContext';
+import {
+  Flame,
+  Phone,
+  MessageCircle,
+  MapPin,
+  Clock,
+  Instagram,
+  Facebook,
+  ShieldCheck,
+  Heart,
+} from 'lucide-react';
+
+export const Footer: React.FC = () => {
+  const { currentView, setCurrentView, settings, branches, language, t } = useApp();
+
+  return (
+    <footer className="bg-[#0e0e12] border-t border-[#22222b] text-zinc-400 text-xs text-start">
+      {/* Main Footer Info */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10">
+          {/* Col 1: Brand & Slogan */}
+          <div className="space-y-4">
+            <div
+              onClick={() => {
+                setCurrentView('home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex items-center gap-2 cursor-pointer group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E51E2A] to-[#800A11] flex items-center justify-center text-white shadow-lg shadow-[#E51E2A]/20">
+                <Flame className="w-6 h-6 fill-white" />
+              </div>
+              <div>
+                <span className="font-heading text-xl font-black tracking-wider text-white">
+                  FRANK<span className="text-[#E51E2A]">.</span>BURGER
+                </span>
+                <span className="block text-[9px] font-bold text-zinc-400 tracking-widest uppercase">
+                  {language === 'ar' ? 'أقوى برجر مشوي' : 'Gourmet Smash Burgers'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              {language === 'ar' ? settings.sloganAr : settings.sloganEn}
+            </p>
+
+            {/* Social Icons */}
+            <div className="flex items-center gap-3 pt-1">
+              <a
+                href={settings?.socialInstagram || 'https://instagram.com/frankburger'}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-xl bg-[#1c1c24] hover:bg-[#E51E2A] text-zinc-300 hover:text-white flex items-center justify-center transition-all"
+                title="Instagram"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a
+                href={settings?.socialFacebook || 'https://facebook.com/frankburger'}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-xl bg-[#1c1c24] hover:bg-[#E51E2A] text-zinc-300 hover:text-white flex items-center justify-center transition-all"
+                title="Facebook"
+              >
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a
+                href={`https://wa.me/${(settings?.whatsapp || '+201001234567').replace(/\+/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-xl bg-[#1c1c24] hover:bg-emerald-600 text-zinc-300 hover:text-white flex items-center justify-center transition-all"
+                title="WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+
+          {/* Col 2: Quick Links */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm font-heading uppercase tracking-wider">
+              {language === 'ar' ? 'روابط سريعة' : 'Quick Links'}
+            </h4>
+            <ul className="space-y-2">
+              <li>
+                <button
+                  onClick={() => {
+                    setCurrentView('home');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  {language === 'ar' ? 'الرئيسية' : 'Home'}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    setCurrentView('menu');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  {language === 'ar' ? 'المنيو' : 'Menu'}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    setCurrentView('tracking');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  {language === 'ar' ? 'تتبع طلبك' : 'Track Order'}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    setCurrentView('branches');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  {language === 'ar' ? 'اتصل بنا' : 'Contact Us'}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    setCurrentView('about');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  {language === 'ar' ? 'عنا' : 'About Us'}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    setCurrentView('profile');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="hover:text-[#E51E2A] text-zinc-300 transition-colors cursor-pointer font-semibold"
+                >
+                  {language === 'ar' ? 'طلباتك السابقة (معرّف الجهاز)' : 'Previous Orders (Device ID)'}
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Col 3: Restaurant Headquarters Location */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm font-heading uppercase tracking-wider">
+              {language === 'ar' ? 'مقر وعنوان المطعم' : 'Restaurant Location'}
+            </h4>
+            <div className="space-y-1.5 text-xs text-start">
+              <span className="font-bold text-zinc-200 block">
+                {language === 'ar' ? 'المقر الرئيسي (أسيوط)' : 'Main Branch (Assiut)'}
+              </span>
+              <span className="text-[11px] text-zinc-400 block leading-relaxed">
+                {language === 'ar' ? settings.addressAr : settings.addressEn}
+              </span>
+              <span className="text-[10px] text-emerald-400 font-mono block pt-1">
+                {language === 'ar' ? settings.openingHoursAr : settings.openingHoursEn}
+              </span>
+            </div>
+          </div>
+
+          {/* Col 4: Hotline & Customer Care */}
+          <div className="space-y-3 text-start">
+            <h4 className="text-white font-bold text-sm font-heading uppercase tracking-wider">
+              {language === 'ar' ? 'خدمة العملاء والطلب الفوري' : 'Hotline & Support'}
+            </h4>
+            <div className="space-y-2">
+              <a
+                href={`tel:${(settings.phone || '01091266737').replace(/[^0-9]/g, '')}`}
+                className="flex items-center gap-2 text-white hover:text-[#E51E2A] transition-colors"
+              >
+                <Phone className="w-4 h-4 text-[#E51E2A] shrink-0" />
+                <span dir="ltr" className="font-mono font-bold text-sm inline-block">
+                  {settings.phone || '01091266737'}
+                </span>
+              </a>
+
+              <a
+                href={`https://wa.me/20${(settings.whatsapp || '01091266737').replace(/[^0-9]/g, '').replace(/^0+/, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4 shrink-0" />
+                <span dir="ltr" className="font-mono font-bold text-sm inline-block">
+                  {settings.whatsapp || '01091266737'}
+                </span>
+              </a>
+
+              <div className="flex items-center gap-2 text-[11px] text-zinc-400 pt-1">
+                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{language === 'ar' ? 'يوميًا: 11:00 ص - 03:30 ص' : 'Daily: 11 AM - 3:30 AM'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Copyright Bar */}
+      <div className="border-t border-[#1e1e26] bg-[#09090c] py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
+          <div>
+            © {new Date().getFullYear()} FRANK BURGER. {language === 'ar' ? 'جميع الحقوق محفوظة' : 'All rights reserved'}.
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                setCurrentView('admin');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-zinc-600 hover:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer py-1 px-2 rounded hover:bg-[#18181f]"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-zinc-500" />
+              <span>{language === 'ar' ? 'بوابة الإدارة ونقاط البيع' : 'POS & Admin Portal'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
