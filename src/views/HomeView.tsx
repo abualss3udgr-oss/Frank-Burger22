@@ -21,6 +21,7 @@ export const HomeView: React.FC = () => {
     offers,
     reviews,
     setCurrentView,
+    setActiveMenuCategory,
     addToCart,
     language,
     t,
@@ -54,7 +55,7 @@ export const HomeView: React.FC = () => {
               {/* CTA Buttons */}
               <div className="flex flex-wrap gap-3 pt-2">
                 <button
-                  onClick={() => setCurrentView('menu')}
+                  onClick={() => { setActiveMenuCategory('all'); setActiveMenuCategory('all'); setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className="px-6 sm:px-8 py-3 rounded-lg bg-[#E51E2A] hover:bg-[#c81520] text-white font-bold text-sm sm:text-base transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   <span>{t('heroOrderNow')}</span>
@@ -62,7 +63,7 @@ export const HomeView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => setCurrentView('menu')}
+                  onClick={() => { setActiveMenuCategory('all'); setActiveMenuCategory('all'); setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className="px-5 sm:px-6 py-3 rounded-lg bg-[#18181c] hover:bg-[#202026] text-zinc-200 hover:text-white border border-[#2e2e38] font-semibold text-sm transition-colors cursor-pointer"
                 >
                   {t('heroViewMenu')}
@@ -120,25 +121,40 @@ export const HomeView: React.FC = () => {
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">{t('categoriesSubtitle')}</p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {categories.map((cat) => {
             const catName = language === 'ar' ? cat.nameAr : cat.nameEn;
             return (
               <button
                 key={cat.id}
-                onClick={() => setCurrentView('menu')}
-                className="group bg-[#121215] hover:bg-[#18181c] border border-[#24242a] hover:border-[#383842] rounded-xl p-4 flex flex-col items-center text-center transition-colors cursor-pointer"
+                onClick={() => { setActiveMenuCategory(cat.id); setActiveMenuCategory('all'); setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="group relative h-36 sm:h-44 w-full rounded-2xl overflow-hidden border border-[#24242a] hover:border-[#E51E2A]/60 transition-all cursor-pointer shadow-lg text-start flex flex-col justify-end"
               >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden mb-3 bg-black/40 border border-[#24242a]">
+                {/* Background Image */}
+                <div className="absolute inset-0 bg-[#121215]">
                   <img
                     src={cat.image}
                     alt={catName}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700"
                   />
                 </div>
-                <h3 className="text-sm font-bold text-white group-hover:text-[#E51E2A] transition-colors font-heading">
-                  {catName}
-                </h3>
+                
+                {/* Overlay Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0e] via-[#0c0c0e]/40 to-transparent opacity-95" />
+                
+                {/* Content */}
+                <div className="relative z-10 p-4 sm:p-5 flex items-center justify-between w-full">
+                  <h3 className="text-sm sm:text-lg font-bold text-white group-hover:text-white transition-colors font-heading drop-shadow-md">
+                    {catName}
+                  </h3>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-[#E51E2A] group-hover:border-[#E51E2A] transition-all duration-300 shadow-sm">
+                    {language === 'ar' ? (
+                      <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    )}
+                  </div>
+                </div>
               </button>
             );
           })}
@@ -156,7 +172,7 @@ export const HomeView: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setCurrentView('menu')}
+            onClick={() => { setActiveMenuCategory('all'); setActiveMenuCategory('all'); setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             className="px-3.5 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#222228] border border-[#24242a] text-xs font-semibold text-zinc-200 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>{language === 'ar' ? 'عرض المنيو' : 'Full Menu'}</span>
@@ -303,7 +319,7 @@ export const HomeView: React.FC = () => {
             <div className="pt-3">
               <button
                 onClick={() => {
-                  setCurrentView('menu');
+                  setActiveMenuCategory('all'); setCurrentView('menu');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="px-6 sm:px-8 py-3 rounded-lg bg-[#E51E2A] hover:bg-[#c81520] text-white font-bold text-sm sm:text-base transition-colors cursor-pointer"

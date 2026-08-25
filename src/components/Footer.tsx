@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { currentView, setCurrentView, settings, branches, language, t } = useApp();
+  const { currentView, setCurrentView, setActiveMenuCategory, settings, branches, language, t } = useApp();
 
   return (
     <footer className="bg-[#0e0e12] border-t border-[#22222b] text-zinc-400 text-xs text-start">
@@ -92,7 +92,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button
                   onClick={() => {
-                    setCurrentView('menu');
+                    setActiveMenuCategory('all'); setCurrentView('menu');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="hover:text-white transition-colors cursor-pointer"
@@ -209,16 +209,7 @@ export const Footer: React.FC = () => {
             © {new Date().getFullYear()} FRANK BURGER. {language === 'ar' ? 'جميع الحقوق محفوظة' : 'All rights reserved'}.
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                setCurrentView('admin');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-zinc-600 hover:text-zinc-300 transition-colors flex items-center gap-1.5 cursor-pointer py-1 px-2 rounded hover:bg-[#18181f]"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-zinc-500" />
-              <span>{language === 'ar' ? 'بوابة الإدارة ونقاط البيع' : 'POS & Admin Portal'}</span>
-            </button>
+            {/* Admin portal accessible via /#admin */}
           </div>
         </div>
       </div>

@@ -194,6 +194,8 @@ interface AppContextType {
   t: (key: keyof typeof translations['ar'], params?: Record<string, string | number>) => string;
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
+  activeMenuCategory: string;
+  setActiveMenuCategory: (id: string) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
@@ -353,6 +355,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     return 'home';
   });
+  
+  const [activeMenuCategory, setActiveMenuCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Handle URL hash changes for separate direct URL routing (e.g. /#admin or direct links)
@@ -973,6 +977,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         t,
         currentView,
         setCurrentView,
+        activeMenuCategory,
+        setActiveMenuCategory,
         searchQuery,
         setSearchQuery,
         products,

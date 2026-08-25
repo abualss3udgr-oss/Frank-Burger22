@@ -17,6 +17,7 @@ export const Navbar: React.FC = () => {
     t,
     currentView,
     setCurrentView,
+    setActiveMenuCategory,
     cartItemCount,
     setIsCartOpen,
     myDeviceOrders,
@@ -62,6 +63,7 @@ export const Navbar: React.FC = () => {
                 <button
                   key={item.view}
                   onClick={() => {
+                    if (item.view === 'menu') setActiveMenuCategory('all');
                     setCurrentView(item.view);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
@@ -150,6 +152,7 @@ export const Navbar: React.FC = () => {
             <button
               key={item.view}
               onClick={() => {
+                if (item.view === 'menu') setActiveMenuCategory('all');
                 setCurrentView(item.view);
                 setIsMobileMenuOpen(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -198,18 +201,6 @@ export const Navbar: React.FC = () => {
                 <Smartphone className="w-3 h-3" />
                 <span>{deviceInfo?.deviceId || 'DEV-AUTO'}</span>
               </div>
-            </button>
-
-            <button
-              onClick={() => {
-                setCurrentView('admin');
-                setIsMobileMenuOpen(false);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="w-full text-start px-3 py-2 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white hover:bg-[#18181c] flex items-center gap-2 cursor-pointer"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
-              <span>{t('navAdmin')}</span>
             </button>
           </div>
         </div>

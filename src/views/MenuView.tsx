@@ -9,18 +9,19 @@ export const MenuView: React.FC = () => {
     categories,
     searchQuery,
     setSearchQuery,
+    activeMenuCategory,
+    setActiveMenuCategory,
     language,
     t,
   } = useApp();
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'default' | 'price_low' | 'price_high' | 'popular'>('default');
 
   // Filter and sort
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       // Category match
-      if (selectedCategoryId !== 'all' && p.categoryId !== selectedCategoryId) {
+      if (activeMenuCategory !== 'all' && p.categoryId !== activeMenuCategory) {
         return false;
       }
 
@@ -47,7 +48,7 @@ export const MenuView: React.FC = () => {
       if (sortBy === 'popular') return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
       return 0;
     });
-  }, [products, selectedCategoryId, searchQuery, sortBy]);
+  }, [products, activeMenuCategory, searchQuery, sortBy]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -105,9 +106,9 @@ export const MenuView: React.FC = () => {
           {/* Category Filter Pills */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none flex-1">
             <button
-              onClick={() => setSelectedCategoryId('all')}
+              onClick={() => setActiveMenuCategory('all')}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer shadow-sm ${
-                selectedCategoryId === 'all'
+                activeMenuCategory === 'all'
                   ? 'bg-[#E51E2A] text-white border border-[#E51E2A]'
                   : 'bg-[#121215] text-zinc-300 hover:text-white hover:bg-[#18181c] border border-[#24242a]'
               }`}
@@ -118,14 +119,14 @@ export const MenuView: React.FC = () => {
             {categories
               .filter((c) => c.isActive)
               .map((cat) => {
-                const isSelected = selectedCategoryId === cat.id;
+                const isSelected = activeMenuCategory === cat.id;
                 const catName = language === 'ar' ? cat.nameAr : cat.nameEn;
                 const count = products.filter((p) => p.categoryId === cat.id).length;
 
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => setSelectedCategoryId(cat.id)}
+                    onClick={() => setActiveMenuCategory(cat.id)}
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer flex items-center gap-2 shadow-sm ${
                       isSelected
                         ? 'bg-[#E51E2A] text-white border border-[#E51E2A]'
@@ -178,7 +179,7 @@ export const MenuView: React.FC = () => {
           <button
             onClick={() => {
               setSearchQuery('');
-              setSelectedCategoryId('all');
+              setActiveMenuCategory('all');
             }}
             className="px-4 py-1.5 rounded-lg bg-[#E51E2A] text-white text-xs font-bold"
           >

@@ -8,6 +8,7 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { OrderConfirmationModal } from './components/OrderConfirmationModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { ToastContainer } from './components/ToastContainer';
+import { ExitIntentSnackbar } from './components/ExitIntentSnackbar';
 
 // Views
 import { HomeView } from './views/HomeView';
@@ -59,6 +60,7 @@ const MainContent: React.FC = () => {
       <OrderConfirmationModal />
       <ReceiptModal />
       <ToastContainer />
+      <ExitIntentSnackbar />
 
       {/* Footer */}
       <Footer />
