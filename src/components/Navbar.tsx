@@ -48,9 +48,9 @@ export const Navbar: React.FC = () => {
             className="flex items-center gap-2.5 text-start cursor-pointer group"
           >
             <img 
-              src="https://drive.google.com/uc?export=view&id=139svUvvC7jEx9uVOrC7tO3XM7el5hnwT" 
+              src="https://res.cloudinary.com/fwxyu7hh/image/upload/f_auto,q_auto/Logo" 
               alt="Frank Burger" 
-              className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+              className="h-7 sm:h-9 md:h-10 w-auto object-contain transition-transform group-hover:scale-105"
             />
           </button>
 
@@ -82,7 +82,7 @@ export const Navbar: React.FC = () => {
             {/* Language Switch */}
             <button
               onClick={toggleLanguage}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-300 hover:text-white hover:bg-[#18181c] transition-colors flex items-center gap-1 cursor-pointer border border-[#24242a]"
+              className="hidden md:flex px-2.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-300 hover:text-white hover:bg-[#18181c] transition-colors items-center gap-1 cursor-pointer border border-[#24242a]"
               title="Change Language"
             >
               <Globe className="w-3.5 h-3.5 text-zinc-400" />
@@ -165,6 +165,23 @@ export const Navbar: React.FC = () => {
           ))}
 
           <div className="pt-2 border-t border-[#24242a] mt-2 flex flex-col gap-1.5">
+            {/* Mobile Language Switch */}
+            <button
+              onClick={() => {
+                toggleLanguage();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full text-start px-3 py-2.5 rounded-lg text-xs font-semibold bg-[#18181c] border border-[#282830] text-zinc-200 hover:text-white flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-[#E51E2A]" />
+                <span>{language === 'ar' ? 'اللغة: العربية' : 'Language: English'}</span>
+              </div>
+              <span className="text-[10px] bg-[#24242a] px-2 py-0.5 rounded text-white font-mono">
+                {language === 'ar' ? 'EN' : 'عربي'}
+              </span>
+            </button>
+
             <button
               onClick={() => {
                 setCurrentView('profile');

@@ -30,9 +30,9 @@ export const Footer: React.FC = () => {
               className="flex items-center gap-2 cursor-pointer group"
             >
               <img 
-                src="https://drive.google.com/uc?export=view&id=139svUvvC7jEx9uVOrC7tO3XM7el5hnwT" 
+                src="https://res.cloudinary.com/fwxyu7hh/image/upload/f_auto,q_auto/Logo" 
                 alt="Frank Burger Logo" 
-                className="h-14 w-auto object-contain transition-transform group-hover:scale-105"
+                className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
               />
             </div>
 
