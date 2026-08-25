@@ -267,166 +267,203 @@ export const UserProfileView: React.FC = () => {
               </button>
             </div>
           ) : (
-            displayedOrders.map((order) => (
-              <div
-                key={order.id}
-                className="bg-[#121215] border border-[#24242a] hover:border-[#383844] transition-colors rounded-2xl p-4 sm:p-5 text-start space-y-4"
-              >
-                {/* Header of Order Card */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#24242a]">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className="text-sm font-bold text-white font-mono bg-[#18181e] px-2.5 py-1 rounded-lg border border-[#282832]">
-                      #{order.id}
-                    </span>
-                    <span
-                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
-                        order.status === 'delivered'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : order.status === 'preparing'
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                          : 'bg-[#E51E2A]/20 text-[#E51E2A] border border-[#E51E2A]/30'
-                      }`}
-                    >
-                      {order.status.replace(/_/g, ' ')}
-                    </span>
-                    <span className="text-xs text-zinc-400 font-mono">
-                      {new Date(order.orderDate).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </span>
-                  </div>
-
-                  {/* Actions Buttons */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => {
-                        setActiveTrackingOrderId(order.id);
-                        setCurrentView('tracking');
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#22222a] text-xs text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors border border-[#282832] cursor-pointer"
-                    >
-                      <Compass className="w-3.5 h-3.5 text-[#E51E2A]" />
-                      <span>{t('trackOrderBtn')}</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveReceiptOrder(order)}
-                      className="px-3 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#22222a] text-xs text-zinc-200 hover:text-white flex items-center gap-1.5 transition-colors border border-[#282832] cursor-pointer"
-                    >
-                      <Printer className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>{t('printReceiptBtn')}</span>
-                    </button>
-
-                    <button
-                      onClick={() => reorderPastOrder(order)}
-                      className="px-3 py-1.5 rounded-lg bg-[#E51E2A] hover:bg-[#c81520] text-xs font-bold text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>{t('reorderBtn')}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Items in this Order */}
-                <div className="space-y-1.5 text-xs text-zinc-300">
-                  {order.items.map((it, idx) => (
-                    <div key={idx} className="flex flex-col gap-2 bg-[#18181c]/50 px-3 py-2 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-white font-mono bg-[#202026] px-1.5 py-0.2 rounded text-[11px]">
-                            {it.quantity}x
+            <div className="bg-[#121215] border border-[#24242a] rounded-2xl overflow-hidden shadow-lg">
+              <div className="overflow-x-auto">
+                <table className="w-full text-start border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-[#18181c] border-b border-[#24242a]">
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                        {language === 'ar' ? 'رقم الطلب' : 'Order ID'}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                        {language === 'ar' ? 'التاريخ' : 'Date'}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                        {language === 'ar' ? 'المنتجات' : 'Items'}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                        {language === 'ar' ? 'الحالة' : 'Status'}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                        {language === 'ar' ? 'الإجمالي' : 'Total'}
+                      </th>
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-center">
+                        {language === 'ar' ? 'الإجراءات' : 'Actions'}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#24242a]">
+                    {displayedOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-[#151519] transition-colors">
+                        {/* Order ID */}
+                        <td className="px-4 py-4 align-top">
+                          <span className="text-sm font-bold text-white font-mono bg-[#18181e] px-2.5 py-1 rounded-lg border border-[#282832] inline-block">
+                            #{order.id}
                           </span>
-                          <span className="text-zinc-200 font-medium">
-                            {language === 'ar' ? it.product.nameAr : it.product.nameEn}
-                          </span>
-                          {it.selectedSize && (
-                            <span className="text-[11px] text-zinc-400">
-                              ({language === 'ar' ? it.selectedSize.nameAr : it.selectedSize.nameEn})
-                            </span>
-                          )}
-                          {it.selectedAddons && it.selectedAddons.length > 0 && (
-                            <span className="text-[10px] text-[#E51E2A]">
-                              (+{it.selectedAddons.length} {language === 'ar' ? 'إضافات' : 'addons'})
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono text-white font-bold">{it.totalPrice} {t('currency')}</span>
-                          {order.status === 'delivered' && (
-                            <button
-                              onClick={() => setReviewingItemId(reviewingItemId === it.cartItemId ? null : it.cartItemId)}
-                              className="text-[10px] text-[#E51E2A] underline hover:text-white transition-colors cursor-pointer"
-                            >
-                              {language === 'ar' ? 'تقييم المنتج' : 'Rate Product'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {reviewingItemId === it.cartItemId && (
-                        <div className="mt-2 pt-2 border-t border-[#24242a] flex flex-col gap-2">
-                          <div className="flex gap-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                onClick={() => setReviewRating(star)}
-                                className="cursor-pointer transition-colors"
-                              >
-                                <svg
-                                  className={`w-4 h-4 ${reviewRating >= star ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'}`}
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                </svg>
-                              </button>
+                        </td>
+                        
+                        {/* Date */}
+                        <td className="px-4 py-4 align-top text-xs text-zinc-300">
+                          <div className="font-mono">
+                            {new Date(order.orderDate).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </div>
+                          <div className="text-zinc-500 mt-1">
+                            {new Date(order.orderDate).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </td>
+
+                        {/* Items */}
+                        <td className="px-4 py-4 align-top">
+                          <div className="space-y-2 text-xs">
+                            {order.items.map((it, idx) => (
+                              <div key={idx} className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-white font-mono bg-[#202026] px-1.5 py-0.2 rounded text-[11px]">
+                                    {it.quantity}x
+                                  </span>
+                                  <span className="text-zinc-200 font-medium">
+                                    {language === 'ar' ? it.product.nameAr : it.product.nameEn}
+                                  </span>
+                                </div>
+                                {(it.selectedSize || (it.selectedAddons && it.selectedAddons.length > 0)) && (
+                                  <div className="text-[10px] text-zinc-500 flex gap-2 ms-6">
+                                    {it.selectedSize && (
+                                      <span>
+                                        ({language === 'ar' ? it.selectedSize.nameAr : it.selectedSize.nameEn})
+                                      </span>
+                                    )}
+                                    {it.selectedAddons && it.selectedAddons.length > 0 && (
+                                      <span className="text-[#E51E2A]">
+                                        (+{it.selectedAddons.length} {language === 'ar' ? 'إضافات' : 'addons'})
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {order.status === 'delivered' && (
+                                  <button
+                                    onClick={() => setReviewingItemId(reviewingItemId === it.cartItemId ? null : it.cartItemId)}
+                                    className="text-[10px] text-[#E51E2A] underline hover:text-white transition-colors cursor-pointer text-start ms-6 mt-0.5 w-max"
+                                  >
+                                    {language === 'ar' ? 'تقييم المنتج' : 'Rate Product'}
+                                  </button>
+                                )}
+                                
+                                {reviewingItemId === it.cartItemId && (
+                                  <div className="mt-1 ms-6 p-2 bg-[#18181c] border border-[#24242a] rounded-lg flex flex-col gap-2">
+                                    <div className="flex gap-1.5">
+                                      {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                          key={star}
+                                          onClick={() => setReviewRating(star)}
+                                          className="cursor-pointer transition-colors"
+                                        >
+                                          <svg
+                                            className={`w-4 h-4 ${reviewRating >= star ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'}`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                          </svg>
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={reviewComment}
+                                        onChange={(e) => setReviewComment(e.target.value)}
+                                        placeholder={language === 'ar' ? 'تعليق...' : 'Comment...'}
+                                        className="flex-1 bg-[#0a0a0c] border border-[#282830] rounded p-1 text-[11px] text-white"
+                                      />
+                                      <button
+                                        onClick={() => handleSubmitReview(it.productId, it.cartItemId)}
+                                        className="bg-[#E51E2A] text-white px-2 py-1 rounded text-[11px] font-bold cursor-pointer hover:bg-[#c81520]"
+                                      >
+                                        {language === 'ar' ? 'إرسال' : 'Submit'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={reviewComment}
-                              onChange={(e) => setReviewComment(e.target.value)}
-                              placeholder={language === 'ar' ? 'اكتب تعليقاً قصيراً...' : 'Write a short comment...'}
-                              className="flex-1 bg-[#0a0a0c] border border-[#24242a] rounded p-1.5 text-xs text-white"
-                            />
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-4 align-top">
+                          <span
+                            className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase inline-flex items-center justify-center text-center ${
+                              order.status === 'delivered'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : order.status === 'preparing'
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                : 'bg-[#E51E2A]/20 text-[#E51E2A] border border-[#E51E2A]/30'
+                            }`}
+                          >
+                            {order.status.replace(/_/g, ' ')}
+                          </span>
+                          <div className="text-[10px] text-zinc-500 mt-2">
+                            {order.orderType === 'delivery' ? t('typeDelivery') : t('typePickup')}
+                          </div>
+                        </td>
+
+                        {/* Total */}
+                        <td className="px-4 py-4 align-top">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-white font-mono">
+                              {order.total} <span className="text-[10px] text-[#E51E2A] font-bold">{t('currency')}</span>
+                            </span>
+                            <span className="text-[10px] text-zinc-500 capitalize mt-1">
+                              {order.paymentMethod.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-4 align-top">
+                          <div className="flex flex-col gap-2 w-max mx-auto">
                             <button
-                              onClick={() => handleSubmitReview(it.productId, it.cartItemId)}
-                              className="bg-[#E51E2A] text-white px-3 py-1.5 rounded text-xs font-bold cursor-pointer hover:bg-[#c81520]"
+                              onClick={() => {
+                                setActiveTrackingOrderId(order.id);
+                                setCurrentView('tracking');
+                              }}
+                              className="px-3 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#22222a] text-[11px] font-medium text-zinc-200 hover:text-white flex items-center justify-center gap-1.5 transition-colors border border-[#282832] cursor-pointer"
                             >
-                              {language === 'ar' ? 'إرسال' : 'Submit'}
+                              <Compass className="w-3.5 h-3.5 text-blue-400" />
+                              <span>{t('trackOrderBtn')}</span>
+                            </button>
+
+                            <button
+                              onClick={() => setActiveReceiptOrder(order)}
+                              className="px-3 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#22222a] text-[11px] font-medium text-zinc-200 hover:text-white flex items-center justify-center gap-1.5 transition-colors border border-[#282832] cursor-pointer"
+                            >
+                              <Printer className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>{t('printReceiptBtn')}</span>
+                            </button>
+
+                            <button
+                              onClick={() => reorderPastOrder(order)}
+                              className="px-3 py-1.5 rounded-lg bg-[#E51E2A] hover:bg-[#c81520] text-[11px] font-bold text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm border border-[#E51E2A]"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>{t('reorderBtn')}</span>
                             </button>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Footer Info of Order */}
-                <div className="pt-2 border-t border-[#24242a] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                  <div className="text-zinc-400 flex items-center gap-2">
-                    <span>{order.orderType === 'delivery' ? t('typeDelivery') : t('typePickup')}</span>
-                    <span>•</span>
-                    <span className="capitalize">{order.paymentMethod.replace(/_/g, ' ')}</span>
-                    {order.customer.addressStreet && (
-                      <>
-                        <span>•</span>
-                        <span className="truncate max-w-[200px] text-zinc-300">{order.customer.addressStreet}</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xs text-zinc-400">{t('total')}:</span>
-                    <span className="text-base font-black text-white font-mono">
-                      {order.total} <span className="text-xs text-[#E51E2A] font-bold">{t('currency')}</span>
-                    </span>
-                  </div>
-                </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))
+            </div>
           )}
         </div>
       )}
