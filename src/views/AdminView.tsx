@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Product, Order, OrderStatus, Category, Coupon, Offer, Branch } from '../types';
 import { AdminLogin } from '../components/AdminLogin';
+import { PeakHoursChart } from '../components/PeakHoursChart';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -765,6 +766,9 @@ const AdminDashboard: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Peak Hours Statistical Chart */}
+          <PeakHoursChart orders={orders} />
 
           {/* Recent Orders Live Table */}
           <div className="bg-[#121216] border border-[#24242e] rounded-2xl p-4 sm:p-5 space-y-4">

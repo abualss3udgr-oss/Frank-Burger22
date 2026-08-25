@@ -470,26 +470,94 @@ export const CheckoutModal: React.FC = () => {
                 />
               </label>
 
-              <label
-                onClick={() => setPaymentMethod('online_card')}
-                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                  paymentMethod === 'online_card'
-                    ? 'bg-[#E51E2A]/15 border-[#E51E2A] text-white'
-                    : 'bg-[#16161b] border-[#272730] text-zinc-300 hover:border-zinc-500'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold">{t('payOnline')}</span>
-                </div>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'online_card'}
-                  onChange={() => setPaymentMethod('online_card')}
-                  className="accent-[#E51E2A]"
-                />
-              </label>
+              <div>
+                <label
+                  onClick={() => setPaymentMethod('online_card')}
+                  className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                    paymentMethod === 'online_card'
+                      ? 'bg-[#E51E2A]/15 border-[#E51E2A] text-white'
+                      : 'bg-[#16161b] border-[#272730] text-zinc-300 hover:border-zinc-500'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-bold">{t('payOnline')}</span>
+                  </div>
+                  <input
+                    type="radio"
+                    name="payment"
+                    checked={paymentMethod === 'online_card'}
+                    onChange={() => setPaymentMethod('online_card')}
+                    className="accent-[#E51E2A]"
+                  />
+                </label>
+                
+                {paymentMethod === 'online_card' && (
+                  <div className="mt-3 p-4 bg-[#121217] border border-[#272730] rounded-xl space-y-4 shadow-inner animate-in fade-in slide-in-from-top-2 duration-300">
+                    <button
+                      type="button"
+                      className="w-full bg-black border border-[#2a2a35] text-white font-bold text-sm py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-[#1a1a1a] transition-colors"
+                      onClick={(e) => { e.preventDefault(); handlePlaceOrder(); }}
+                    >
+                      <svg viewBox="0 0 50 20" className="h-4 w-auto fill-current">
+                        <path d="M22.5,14.6l-1.9-9.1h3l1,5.6c0.1,0.7,0.3,1.4,0.4,2.2h0.1c0.1-0.8,0.4-1.5,0.6-2.2l1.2-5.6h3l-2.6,9.1H22.5z M14.9,9.4c0-1.7,1.4-2.7,3.5-2.7c1,0,1.9,0.2,2.6,0.6v1.9c-0.8-0.5-1.7-0.7-2.6-0.7c-0.9,0-1.4,0.4-1.4,1.1c0,0.6,0.5,0.9,1.6,1.2c1.7,0.4,2.8,1.2,2.8,2.7c0,1.7-1.3,2.8-3.6,2.8c-1.1,0-2.3-0.3-3-0.8v-2c0.8,0.6,1.9,0.9,2.9,0.9c1,0,1.5-0.4,1.5-1.1c0-0.7-0.6-1-1.6-1.3C15.8,11.3,14.9,10.6,14.9,9.4z M32.2,16.5h-2v-1.6h-0.1c-0.5,1.2-1.6,1.8-3,1.8c-1.8,0-3.1-1.3-3.1-3.6c0-2.5,1.7-3.7,4.3-3.7c0.8,0,1.5,0.1,2,0.3v-0.4c0-1.2-0.8-1.9-2.1-1.9c-0.8,0-1.6,0.2-2.3,0.7l-0.6-1.5c0.9-0.6,2-0.9,3.3-0.9c1,0,1.8,0.3,2.4,0.8c0.8,0.7,1.1,1.8,1.1,3.4V16.5z M30.1,11c-0.4-0.1-1-0.2-1.7-0.2c-1.4,0-2.2,0.6-2.2,1.8c0,1.1,0.6,1.7,1.6,1.7c1.1,0,1.9-0.8,2.2-1.8V11z M40.7,16.7c-0.9,0-1.6-0.3-2.1-0.8c-0.6-0.6-0.8-1.5-0.8-2.6V7.4h2.2v5.7c0,1.2,0.6,1.8,1.5,1.8c1,0,1.9-0.8,2.1-1.8V7.4h2.2v9.1H44v-1.5h-0.1C43.3,16.1,42.2,16.7,40.7,16.7z M3.8,9.2C3.8,8,3.2,7,2.2,6.4C3.1,5,4.7,4.4,6.4,4.3c1.7-0.2,3.3,1,4.2,1c0.9,0,2.2-0.9,3.6-0.8c1.8,0.1,3.5,1.1,4.4,2.7c-2,1.2-3.2,3.4-3.1,5.8c0.1,2.4,1.4,4.5,3.3,5.6c-0.9,1.3-1.9,2.8-3.3,2.8c-1.3,0-1.8-0.8-3.4-0.8c-1.5,0-2.1,0.8-3.3,0.8C7.5,21.5,6.3,19.9,5.5,18.5C3.8,15.9,2.8,12.7,3.8,9.2z M8.5,4.2C9.4,3,10,1.5,9.8,0C8.4,0.1,6.8,1,5.8,2.2C5,3.3,4.3,4.9,4.5,6.3C6.1,6.4,7.6,5.4,8.5,4.2z" />
+                      </svg>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <div className="h-px bg-[#272730] flex-1"></div>
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase">{language === 'ar' ? 'أو الدفع بالبطاقة' : 'Or pay with card'}</span>
+                      <div className="h-px bg-[#272730] flex-1"></div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <label className="block text-[10px] font-bold text-zinc-400 mb-1">{language === 'ar' ? 'رقم البطاقة' : 'Card Number'}</label>
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            dir="ltr"
+                            placeholder="0000 0000 0000 0000" 
+                            className="w-full bg-[#18181f] border border-[#2c2c38] rounded-lg py-2 px-3 pr-10 text-sm text-white font-mono placeholder-zinc-600 focus:outline-none focus:border-[#E51E2A]"
+                            maxLength={19}
+                          />
+                          <div className="absolute top-1/2 -translate-y-1/2 right-2 rtl:right-auto rtl:left-2 flex gap-1">
+                            <div className="w-6 h-4 bg-[#E51E2A] rounded-sm opacity-80"></div>
+                            <div className="w-6 h-4 bg-orange-400 rounded-sm opacity-80 -ml-2 mix-blend-screen"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1">{language === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}</label>
+                          <input 
+                            type="text" 
+                            dir="ltr"
+                            placeholder="MM/YY" 
+                            className="w-full bg-[#18181f] border border-[#2c2c38] rounded-lg py-2 px-3 text-sm text-white font-mono placeholder-zinc-600 focus:outline-none focus:border-[#E51E2A]"
+                            maxLength={5}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-[10px] font-bold text-zinc-400 mb-1">CVC</label>
+                          <input 
+                            type="password" 
+                            dir="ltr"
+                            placeholder="123" 
+                            className="w-full bg-[#18181f] border border-[#2c2c38] rounded-lg py-2 px-3 text-sm text-white font-mono placeholder-zinc-600 focus:outline-none focus:border-[#E51E2A]"
+                            maxLength={3}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-zinc-500 flex items-center gap-1 mt-1">
+                        <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                        {language === 'ar' ? 'هذا نموذج تجريبي آمن، لا يتم سحب أي أموال' : 'This is a secure mock simulation, no real charges will occur'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </form>
