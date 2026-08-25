@@ -42,6 +42,7 @@ import {
   Copy,
   Sliders,
   ExternalLink,
+  ChevronLeft,
 } from 'lucide-react';
 
 // Sound alert helper using Web Audio API
@@ -95,7 +96,7 @@ const AdminDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<
     'overview' | 'orders' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings'
-  >('overview');
+  >(() => (adminUser?.role === 'cashier' ? 'orders' : 'overview'));
 
   // Search & Filter States
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
@@ -372,6 +373,8 @@ const AdminDashboard: React.FC = () => {
     switch (method) {
       case 'cash_on_delivery':
         return 'نقداً عند الاستلام (كاش)';
+      case 'instapay':
+        return 'إنستاباي (InstaPay)';
       case 'card_on_delivery':
         return 'بطاقة ائتمان عند الاستلام (POS)';
       case 'vodafone_cash_instapay':
@@ -394,23 +397,25 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Main Top Header Bar */}
-      <header className="bg-[#121216] border border-[#262630] rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Restaurant Identity & Live Indicator */}
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E51E2A] to-[#990e18] shadow-md shadow-[#E51E2A]/20 text-white flex items-center justify-center font-heading font-black text-xl shrink-0">
-            FB
-          </div>
+          <img 
+            src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png" 
+            alt="Frank Burger" 
+            className="h-12 sm:h-14 w-auto object-contain shrink-0"
+          />
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-lg sm:text-xl font-black text-white font-heading tracking-tight">
+              <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
                 لوحة تحكم وإدارة المطعم
               </h1>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>مباشر متصل</span>
               </div>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-500 mt-0.5">
               نظام إدارة الطلبات الحية، المطبخ، نقاط البيع والمنيو — {settings.restaurantNameAr}
             </p>
           </div>
@@ -418,6 +423,21 @@ const AdminDashboard: React.FC = () => {
 
         {/* Action Controls & User Identity */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Active Logged-in User Badge */}
+          {adminUser && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 border border-zinc-200 text-xs">
+              <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[11px] ${
+                adminUser.role === 'cashier' ? 'bg-amber-500 text-zinc-950' : 'bg-[#E51E2A] text-white'
+              }`}>
+                {adminUser.role === 'cashier' ? <ChefHat className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+              </div>
+              <div className="text-start">
+                <span className="font-bold text-zinc-900 block leading-tight text-[11px]">{adminUser.name}</span>
+                <span className="text-[10px] text-zinc-500 block leading-none font-mono">@{adminUser.username}</span>
+              </div>
+            </div>
+          )}
+
           {/* Sound Alert Toggle */}
           <button
             onClick={() => {
@@ -428,8 +448,8 @@ const AdminDashboard: React.FC = () => {
             title={soundEnabled ? 'التنبيهات الصوتية مفعلة' : 'التنبيهات الصوتية معطلة'}
             className={`p-2 rounded-xl text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
               soundEnabled
-                ? 'bg-amber-500/15 border-amber-500/30 text-amber-400 hover:bg-amber-500/25'
-                : 'bg-[#18181f] border-[#2c2c36] text-zinc-400 hover:text-white'
+                ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900'
             }`}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -442,18 +462,18 @@ const AdminDashboard: React.FC = () => {
           <button
             onClick={handleCopyAdminLink}
             title="نسخ الرابط المباشر لصفحة الإدارة"
-            className="text-xs bg-[#18181f] hover:bg-[#22222a] border border-[#2c2c36] rounded-xl px-3 py-2 text-zinc-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-xl px-3 py-2 text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             {copiedLink ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-bold text-[11px]">تم نسخ الرابط!</span>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-700 font-bold text-[11px]">تم نسخ الرابط!</span>
               </>
             ) : (
               <>
-                <LinkIcon className="w-3.5 h-3.5 text-zinc-400" />
-                <span dir="ltr" className="text-[11px] font-mono text-zinc-400 font-bold">/#admin</span>
-                <span className="text-[11px] text-zinc-300 font-semibold">نسخ</span>
+                <LinkIcon className="w-3.5 h-3.5 text-zinc-500" />
+                <span dir="ltr" className="text-[11px] font-mono text-zinc-500 font-bold">/#admin</span>
+                <span className="text-[11px] text-zinc-700 font-semibold">نسخ</span>
               </>
             )}
           </button>
@@ -467,13 +487,13 @@ const AdminDashboard: React.FC = () => {
             }}
             className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm ${
               settings.isStoreOpen
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
-                : 'bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25'
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
             }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                settings.isStoreOpen ? 'bg-emerald-400' : 'bg-rose-500'
+                settings.isStoreOpen ? 'bg-emerald-500' : 'bg-rose-500'
               }`}
             />
             <span>
@@ -488,9 +508,9 @@ const AdminDashboard: React.FC = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             title="الانتقال لمتجر العملاء"
-            className="text-xs bg-[#18181f] hover:bg-[#252530] border border-[#2c2c36] text-zinc-200 hover:text-white rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-semibold"
+            className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 hover:text-zinc-900 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-semibold"
           >
-            <Store className="w-3.5 h-3.5 text-zinc-400" />
+            <Store className="w-3.5 h-3.5 text-zinc-500" />
             <span className="text-[11px]">عرض المتجر</span>
           </button>
 
@@ -498,7 +518,7 @@ const AdminDashboard: React.FC = () => {
           <button
             onClick={logoutAdmin}
             title="تسجيل الخروج من لوحة التحكم"
-            className="text-xs bg-rose-950/20 hover:bg-rose-900/40 border border-rose-500/30 text-rose-300 hover:text-rose-200 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-bold"
+            className="text-xs bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 hover:text-rose-900 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-bold"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="text-[11px]">خروج</span>
@@ -506,109 +526,195 @@ const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Tabs Navigation Bar */}
-      <nav className="flex items-center gap-2 border-b border-[#24242e] pb-3 overflow-x-auto scrollbar-none">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
-            activeTab === 'overview'
-              ? 'bg-[#E51E2A] text-white shadow-lg shadow-[#E51E2A]/20'
-              : 'text-zinc-400 hover:text-white hover:bg-[#18181f] bg-[#121216] border border-[#22222a]'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>نظرة عامة وإحصائيات</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('orders')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 relative ${
-            activeTab === 'orders'
-              ? 'bg-[#E51E2A] text-white shadow-lg shadow-[#E51E2A]/20'
-              : 'text-zinc-400 hover:text-white hover:bg-[#18181f] bg-[#121216] border border-[#22222a]'
-          }`}
-        >
-          <ShoppingBag className="w-4 h-4" />
-          <span>الطلبات الحية (KDS / POS)</span>
-          {pendingOrdersCount > 0 && (
-            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-[#E51E2A] animate-pulse">
-              {pendingOrdersCount}
+      {/* Main Dashboard Layout with Sidebar & Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Sidebar Navigation */}
+        <aside className="lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4 sticky top-6">
+          <div className="px-3 py-2 border-b border-zinc-100">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+              قائمة التنقل السريع
             </span>
-          )}
-        </button>
+          </div>
 
-        <button
-          onClick={() => setActiveTab('products')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
-            activeTab === 'products'
-              ? 'bg-[#E51E2A] text-white shadow-lg shadow-[#E51E2A]/20'
-              : 'text-zinc-400 hover:text-white hover:bg-[#18181f] bg-[#121216] border border-[#22222a]'
-          }`}
-        >
-          <UtensilsCrossed className="w-4 h-4" />
-          <span>قائمة الطعام والأسعار</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/40 text-zinc-300 font-mono">
-            {products.length}
-          </span>
-        </button>
+          <nav className="space-y-1.5">
+            {/* Overview - Manager Only */}
+            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'overview'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  <span>نظرة عامة وإحصائيات</span>
+                </div>
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'overview' ? 'text-white' : 'text-zinc-400'}`} />
+              </button>
+            )}
 
-        <button
-          onClick={() => setActiveTab('categories')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
-            activeTab === 'categories'
-              ? 'bg-[#E51E2A] text-white shadow-lg shadow-[#E51E2A]/20'
-              : 'text-zinc-400 hover:text-white hover:bg-[#18181f] bg-[#121216] border border-[#22222a]'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>أقسام المنيو</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/40 text-zinc-300 font-mono">
-            {categories.length}
-          </span>
-        </button>
+            {/* Orders - Available for All (Cashier & Manager) */}
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
+                activeTab === 'orders'
+                  ? 'bg-[#E51E2A] text-white shadow-md'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <ShoppingBag className="w-4 h-4 shrink-0" />
+                <span>الطلبات الحية (KDS / POS)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {pendingOrdersCount > 0 && (
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    activeTab === 'orders' ? 'bg-white text-[#E51E2A]' : 'bg-[#E51E2A] text-white'
+                  } animate-pulse`}>
+                    {pendingOrdersCount}
+                  </span>
+                )}
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'orders' ? 'text-white' : 'text-zinc-400'}`} />
+              </div>
+            </button>
 
-        <button
-          onClick={() => setActiveTab('coupons')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
-            activeTab === 'coupons'
-              ? 'bg-[#E51E2A] text-white shadow-lg shadow-[#E51E2A]/20'
-              : 'text-zinc-400 hover:text-white hover:bg-[#18181f] bg-[#121216] border border-[#22222a]'
-          }`}
-        >
-          <Percent className="w-4 h-4" />
-          <span>كوبونات الخصم</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/40 text-zinc-300 font-mono">
-            {coupons.length}
-          </span>
-        </button>
+            {/* Products - Manager Only */}
+            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager' || adminUser?.role === 'content_manager') && (
+              <button
+                onClick={() => setActiveTab('products')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'products'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <UtensilsCrossed className="w-4 h-4 shrink-0" />
+                  <span>قائمة الطعام والأسعار</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                    activeTab === 'products' ? 'bg-white/20 text-white' : 'bg-zinc-200 text-zinc-600'
+                  }`}>
+                    {products.length}
+                  </span>
+                  <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'products' ? 'text-white' : 'text-zinc-400'}`} />
+                </div>
+              </button>
+            )}
 
-        <button
-          onClick={() => setActiveTab('reviews')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
-            activeTab === 'reviews'
-              ? 'bg-[#E51E2A] text-white shadow-lg shadow-[#E51E2A]/20'
-              : 'text-zinc-400 hover:text-white hover:bg-[#18181f] bg-[#121216] border border-[#22222a]'
-          }`}
-        >
-          <Star className="w-4 h-4" />
-          <span>تقييمات وآراء العملاء</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-black/40 text-zinc-300 font-mono">
-            {reviews.length}
-          </span>
-        </button>
+            {/* Categories - Manager Only */}
+            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager' || adminUser?.role === 'content_manager') && (
+              <button
+                onClick={() => setActiveTab('categories')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'categories'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Layers className="w-4 h-4 shrink-0" />
+                  <span>أقسام المنيو</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                    activeTab === 'categories' ? 'bg-white/20 text-white' : 'bg-zinc-200 text-zinc-600'
+                  }`}>
+                    {categories.length}
+                  </span>
+                  <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'categories' ? 'text-white' : 'text-zinc-400'}`} />
+                </div>
+              </button>
+            )}
 
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
-            activeTab === 'settings'
-              ? 'bg-[#E51E2A] text-white shadow-lg shadow-[#E51E2A]/20'
-              : 'text-zinc-400 hover:text-white hover:bg-[#18181f] bg-[#121216] border border-[#22222a]'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          <span>إعدادات المطعم والفروع</span>
-        </button>
-      </nav>
+            {/* Coupons - Manager Only */}
+            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+              <button
+                onClick={() => setActiveTab('coupons')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'coupons'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Percent className="w-4 h-4 shrink-0" />
+                  <span>كوبونات الخصم</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                    activeTab === 'coupons' ? 'bg-white/20 text-white' : 'bg-zinc-200 text-zinc-600'
+                  }`}>
+                    {coupons.length}
+                  </span>
+                  <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'coupons' ? 'text-white' : 'text-zinc-400'}`} />
+                </div>
+              </button>
+            )}
+
+            {/* Reviews - Manager Only */}
+            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'reviews'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Star className="w-4 h-4 shrink-0" />
+                  <span>تقييمات وآراء العملاء</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                    activeTab === 'reviews' ? 'bg-white/20 text-white' : 'bg-zinc-200 text-zinc-600'
+                  }`}>
+                    {reviews.length}
+                  </span>
+                  <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'reviews' ? 'text-white' : 'text-zinc-400'}`} />
+                </div>
+              </button>
+            )}
+
+            {/* Settings - Manager Only */}
+            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'settings'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Settings className="w-4 h-4 shrink-0" />
+                  <span>إعدادات المطعم والفروع</span>
+                </div>
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'settings' ? 'text-white' : 'text-zinc-400'}`} />
+              </button>
+            )}
+          </nav>
+
+          {/* Role Helper Info Box */}
+          <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-xs text-zinc-600 space-y-1">
+            <div className="font-bold text-zinc-900 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#E51E2A]" />
+              <span>صلاحيات الحساب</span>
+            </div>
+            <p className="text-[11px] text-zinc-500 leading-relaxed">
+              {adminUser?.role === 'cashier' 
+                ? 'أنت مسجل كـ "كاشير ومسئول طلبات". مهامك مقتصرة على متابعة الطلبات الحية، تجهيزها، وإرسال تحديثات الحالة للعملاء أولاً بأول.'
+                : 'أنت مسجل كـ "المدير العام". لديك صلاحيات كاملة لإدارة المنيو، الأسعار، الإحصائيات، الكوبونات، والإعدادات.'}
+            </p>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="lg:col-span-9 space-y-6">
 
       {/* ========================================================================= */}
       {/* TAB 1: OVERVIEW & PERFORMANCE STATS */}
@@ -1163,6 +1269,26 @@ const AdminDashboard: React.FC = () => {
                           </span>
                         </div>
 
+                        {order.paymentProofUrl && (
+                          <>
+                            <div className="h-6 w-px bg-[#262630]" />
+                            <div>
+                              <span className="text-zinc-500 text-[10px] block">إيصال التحويل:</span>
+                              <button
+                                onClick={() => {
+                                  const win = window.open();
+                                  if (win) {
+                                    win.document.write(`<img src="${order.paymentProofUrl}" style="max-width:100%; height:auto;" />`);
+                                  }
+                                }}
+                                className="text-xs text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
+                              >
+                                عرض إيصال إنستاباي 📸
+                              </button>
+                            </div>
+                          </>
+                        )}
+
                         <div className="h-6 w-px bg-[#262630]" />
 
                         <div>
@@ -1686,6 +1812,52 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Tracking Settings */}
+          <div className="bg-[#121216] border border-[#24242e] rounded-2xl p-5 space-y-4 shadow-md">
+            <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
+              <LinkIcon className="w-4 h-4 text-emerald-400" />
+              <span>إعدادات التتبع والتحليلات (Pixels/Codes)</span>
+            </h2>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-zinc-300 mb-1">
+                  Facebook Pixel ID:
+                </label>
+                <input
+                  type="text"
+                  value={settings.facebookPixelId || ''}
+                  onChange={(e) => updateSettings({ facebookPixelId: e.target.value })}
+                  className="w-full bg-[#18181f] border border-[#2c2c38] rounded-xl py-2 px-3 text-white font-mono outline-none focus:border-[#E51E2A]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-zinc-300 mb-1">
+                  TikTok Pixel ID:
+                </label>
+                <input
+                  type="text"
+                  value={settings.tiktokPixelId || ''}
+                  onChange={(e) => updateSettings({ tiktokPixelId: e.target.value })}
+                  className="w-full bg-[#18181f] border border-[#2c2c38] rounded-xl py-2 px-3 text-white font-mono outline-none focus:border-[#E51E2A]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-zinc-300 mb-1">
+                  Google Analytics ID:
+                </label>
+                <input
+                  type="text"
+                  value={settings.googleAnalyticsId || ''}
+                  onChange={(e) => updateSettings({ googleAnalyticsId: e.target.value })}
+                  className="w-full bg-[#18181f] border border-[#2c2c38] rounded-xl py-2 px-3 text-white font-mono outline-none focus:border-[#E51E2A]"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Branches Manager */}
           <div className="bg-[#121216] border border-[#24242e] rounded-2xl p-5 space-y-4 shadow-md">
             <h2 className="text-base font-bold text-white font-heading flex items-center gap-2">
@@ -2053,6 +2225,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+        </main>
+      </div>
     </div>
   );
 };

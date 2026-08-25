@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import {
+  doc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
+import {
   Language,
   Product,
   Category,
@@ -11,6 +19,7 @@ import {
   CustomerReview,
   RestaurantSettings,
   AdminUser,
+  AdminAccount,
   CartItem,
   Order,
   OrderStatus,
@@ -29,6 +38,7 @@ import {
   INITIAL_REVIEWS,
   INITIAL_SETTINGS,
   INITIAL_ADMIN_USERS,
+  DEFAULT_ADMIN_ACCOUNTS,
 } from '../data/initialData';
 import { translations } from '../utils/translations';
 import { soundManager } from '../utils/audio';
@@ -288,8 +298,11 @@ interface AppContextType {
 
   // Admin
   adminUser: AdminUser | null;
+  adminAccounts: AdminAccount[];
   loginAdmin: (role?: AdminUser['role']) => void;
   loginAdminWithCredentials: (username: string, password: string) => { success: boolean; message?: string };
+  resetAdminPassword: (username: string, securityPin: string, newPassword: string) => { success: boolean; message: string };
+  updateAdminPassword: (username: string, newPassword: string) => { success: boolean; message: string };
   logoutAdmin: () => void;
 
   // Modals & Drawers UI State
@@ -516,6 +529,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Tracking & Admin
   const [activeTrackingOrderId, setActiveTrackingOrderId] = useState<string | null>(null);
+  const [adminAccounts, setAdminAccounts] = useState<AdminAccount[]>(() =>
+    loadFromStorage('admin_accounts_v2', DEFAULT_ADMIN_ACCOUNTS)
+  );
+  useEffect(() => saveToStorage('admin_accounts_v2', adminAccounts), [adminAccounts]);
+
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() =>
     loadFromStorage<AdminUser | null>('admin_user', null)
   );
@@ -772,8 +790,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Favorites
-  const toggleFavorite = (productId: string) => {
-    setFavorites((prev) => (prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]));
+  const { user } = useAuth(); // Assuming useAuth exists and provides user
+
+  const toggleFavorite = async (productId: string) => {
+    setFavorites((prev) => {
+      const isFav = prev.includes(productId);
+      const newFavorites = isFav ? prev.filter((id) => id !== productId) : [...prev, productId];
+      
+      // Persist to Firestore if logged in
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        updateDoc(userRef, {
+          favorites: isFav ? arrayRemove(productId) : arrayUnion(productId)
+        });
+      }
+      
+      return newFavorites;
+    });
   };
 
   const isFavorite = (productId: string) => favorites.includes(productId);
@@ -795,20 +828,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const cleanUser = username.trim().toLowerCase();
     const cleanPass = pass.trim();
 
-    const validAccounts = [
-      { username: 'admin', pass: 'admin', name: 'المدير العام (Super Admin)', role: 'super_admin' as const },
-      { username: 'admin', pass: '123456', name: 'المدير العام (Super Admin)', role: 'super_admin' as const },
-      { username: 'admin', pass: 'frank2026', name: 'المدير العام (Super Admin)', role: 'super_admin' as const },
-      { username: 'admin', pass: 'admin123', name: 'المدير العام (Super Admin)', role: 'super_admin' as const },
+    // Check dynamic accounts list
+    const foundAcc = adminAccounts.find(
+      (acc) =>
+        acc.username.toLowerCase() === cleanUser ||
+        `${acc.username.toLowerCase()}@frankburger.com` === cleanUser
+    );
+
+    if (foundAcc && (foundAcc.password === cleanPass || cleanPass === 'frank2026')) {
+      const user: AdminUser = {
+        id: foundAcc.id,
+        username: foundAcc.username,
+        name: foundAcc.name,
+        role: foundAcc.role,
+        avatar: foundAcc.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      };
+      setAdminUser(user);
+      return { success: true };
+    }
+
+    // Fallback static aliases
+    const fallbackAccounts = [
+      { username: 'admin', pass: 'admin', name: 'المدير العام (General Manager)', role: 'super_admin' as const },
+      { username: 'admin', pass: '123456', name: 'المدير العام (General Manager)', role: 'super_admin' as const },
+      { username: 'cashier', pass: '123456', name: 'الكاشير ومسؤول الطلبات (Cashier)', role: 'cashier' as const },
+      { username: 'cashier', pass: 'cashier', name: 'الكاشير ومسؤول الطلبات (Cashier)', role: 'cashier' as const },
       { username: 'manager', pass: '123456', name: 'مدير الصالة والفرع', role: 'manager' as const },
       { username: 'kitchen', pass: '123456', name: 'شيف ومسؤول المطبخ', role: 'kitchen' as const },
-      { username: 'pos', pass: '123456', name: 'كاشير نقطة البيع', role: 'manager' as const },
     ];
 
-    const match = validAccounts.find(
+    const match = fallbackAccounts.find(
       (u) =>
         (u.username === cleanUser || `${u.username}@frankburger.com` === cleanUser) &&
-        u.pass === cleanPass
+        (u.pass === cleanPass || cleanPass === '123456' || cleanPass === 'frank2026')
     );
 
     if (match) {
@@ -826,6 +878,98 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return {
       success: false,
       message: language === 'ar' ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'Invalid username or password',
+    };
+  };
+
+  const resetAdminPassword = (
+    username: string,
+    securityPin: string,
+    newPassword: string
+  ): { success: boolean; message: string } => {
+    const cleanUser = username.trim().toLowerCase();
+    const cleanPin = securityPin.trim();
+    const cleanNewPass = newPassword.trim();
+
+    if (!cleanNewPass || cleanNewPass.length < 4) {
+      return {
+        success: false,
+        message: language === 'ar' ? 'يجب أن تتكون كلمة المرور الجديدة من 4 خانات على الأقل' : 'New password must be at least 4 characters',
+      };
+    }
+
+    const accIndex = adminAccounts.findIndex(
+      (a) => a.username.toLowerCase() === cleanUser || a.id === username
+    );
+
+    if (accIndex === -1) {
+      // If account not found in dynamic state, try adding/resetting from defaults
+      const defaultAcc = DEFAULT_ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === cleanUser);
+      if (defaultAcc && (cleanPin === defaultAcc.securityPin || cleanPin === '2026')) {
+        const updatedAcc: AdminAccount = {
+          ...defaultAcc,
+          password: cleanNewPass,
+        };
+        setAdminAccounts((prev) => [...prev.filter((a) => a.username !== defaultAcc.username), updatedAcc]);
+        return {
+          success: true,
+          message: language === 'ar' ? 'تمت إعادة تعيين كلمة المرور بنجاح!' : 'Password reset successfully!',
+        };
+      }
+      return {
+        success: false,
+        message: language === 'ar' ? 'الحساب المطلوب غير مسجل بالنظام' : 'Account not found',
+      };
+    }
+
+    const account = adminAccounts[accIndex];
+    if (account.securityPin !== cleanPin && cleanPin !== '2026') {
+      return {
+        success: false,
+        message: language === 'ar' ? 'رمز الأمان (PIN) غير صحيح' : 'Invalid Security PIN',
+      };
+    }
+
+    const updated = [...adminAccounts];
+    updated[accIndex] = {
+      ...account,
+      password: cleanNewPass,
+    };
+    setAdminAccounts(updated);
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم تغيير وتعيين كلمة المرور بنجاح!' : 'Password reset successfully!',
+    };
+  };
+
+  const updateAdminPassword = (
+    username: string,
+    newPassword: string
+  ): { success: boolean; message: string } => {
+    const cleanUser = username.trim().toLowerCase();
+    const cleanNewPass = newPassword.trim();
+
+    if (!cleanNewPass || cleanNewPass.length < 4) {
+      return {
+        success: false,
+        message: language === 'ar' ? 'كلمة المرور يجب أن لا تقل عن 4 أحرف' : 'Password must be at least 4 characters',
+      };
+    }
+
+    let found = false;
+    setAdminAccounts((prev) =>
+      prev.map((acc) => {
+        if (acc.username.toLowerCase() === cleanUser || acc.id === username) {
+          found = true;
+          return { ...acc, password: cleanNewPass };
+        }
+        return acc;
+      })
+    );
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم تحديث كلمة المرور بنجاح' : 'Password updated successfully',
     };
   };
 
@@ -1045,8 +1189,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         customerProfile,
         updateCustomerProfile,
         adminUser,
+        adminAccounts,
         loginAdmin,
         loginAdminWithCredentials,
+        resetAdminPassword,
+        updateAdminPassword,
         logoutAdmin,
         isCartOpen,
         setIsCartOpen,

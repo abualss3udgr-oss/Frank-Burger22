@@ -90,9 +90,7 @@ export type OrderStatus =
 
 export type PaymentMethod =
   | 'cash_on_delivery'
-  | 'card_on_delivery'
-  | 'online_card'
-  | 'vodafone_cash_instapay';
+  | 'instapay';
 
 export type OrderType = 'delivery' | 'pickup';
 
@@ -144,6 +142,7 @@ export interface Order {
   orderType: OrderType;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
+  paymentProofUrl?: string; // URL for payment screenshot
   paymentStatus: 'pending' | 'paid' | 'failed';
   subtotal: number;
   discount: number;
@@ -227,9 +226,22 @@ export interface RestaurantSettings {
   socialTiktok: string;
   rushHourMode: boolean;
   estimatedPreparationTimeMinutes: number;
+  facebookPixelId: string;
+  tiktokPixelId: string;
+  googleAnalyticsId: string;
 }
 
-export type AdminRole = 'super_admin' | 'manager' | 'kitchen' | 'content_manager';
+export type AdminRole = 'super_admin' | 'cashier' | 'manager' | 'kitchen' | 'content_manager';
+
+export interface AdminAccount {
+  id: string;
+  username: string;
+  password: string;
+  name: string;
+  role: AdminRole;
+  securityPin: string;
+  avatar?: string;
+}
 
 export interface AdminUser {
   id: string;

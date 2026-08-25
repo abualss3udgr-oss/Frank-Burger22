@@ -9,6 +9,7 @@ import {
   CustomerReview,
   RestaurantSettings,
   AdminUser,
+  AdminAccount,
 } from '../types';
 
 export const INITIAL_CATEGORIES: Category[] = [
@@ -1236,13 +1237,41 @@ export const INITIAL_SETTINGS: RestaurantSettings = {
   estimatedPreparationTimeMinutes: 25,
 };
 
+export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
+  {
+    id: 'acc-admin',
+    username: 'admin',
+    password: '123456',
+    name: 'المدير العام (General Manager)',
+    role: 'super_admin',
+    securityPin: '2026',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  },
+  {
+    id: 'acc-cashier',
+    username: 'cashier',
+    password: '123456',
+    name: 'الكاشير ومسؤول الطلبات (Cashier)',
+    role: 'cashier',
+    securityPin: '2026',
+    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
+  },
+];
+
 export const INITIAL_ADMIN_USERS: AdminUser[] = [
   {
     id: 'admin-super',
     username: 'admin',
-    name: 'مدير النظام',
+    name: 'المدير العام (General Manager)',
     role: 'super_admin',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  },
+  {
+    id: 'admin-cashier',
+    username: 'cashier',
+    name: 'الكاشير ومسؤول الطلبات (Cashier)',
+    role: 'cashier',
+    avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
   },
 ];
 

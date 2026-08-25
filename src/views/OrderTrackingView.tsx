@@ -123,36 +123,36 @@ export const OrderTrackingView: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header */}
       <div className="text-start">
-        <h1 className="text-2xl sm:text-3xl font-black text-white font-heading">
+        <h1 className="text-2xl sm:text-3xl font-black text-zinc-900 font-heading">
           {t('trackingPageTitle')}
         </h1>
-        <p className="text-xs sm:text-sm text-zinc-400 mt-1">{t('trackLookupDesc')}</p>
+        <p className="text-xs sm:text-sm text-zinc-500 mt-1">{t('trackLookupDesc')}</p>
       </div>
 
       {/* Lookup Form */}
       <form
         onSubmit={handleSearch}
-        className="bg-[#121215] border border-[#24242a] rounded-xl p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end text-start"
+        className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end text-start shadow-sm"
       >
         <div className="flex-1">
-          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">{t('orderNumberInput')}</label>
+          <label className="block text-[11px] font-semibold text-zinc-500 mb-1">{t('orderNumberInput')}</label>
           <input
             type="text"
             value={inputOrderNumber}
             onChange={(e) => setInputOrderNumber(e.target.value.toUpperCase())}
             placeholder="FB-9104"
-            className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white uppercase font-mono focus:outline-none focus:border-[#E51E2A]"
+            className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 uppercase font-mono focus:outline-none focus:border-[#E51E2A]"
           />
         </div>
 
         <div className="flex-1">
-          <label className="block text-[11px] font-semibold text-zinc-400 mb-1">{t('phoneInput')}</label>
+          <label className="block text-[11px] font-semibold text-zinc-500 mb-1">{t('phoneInput')}</label>
           <input
             type="tel"
             value={inputPhone}
             onChange={(e) => setInputPhone(e.target.value)}
             placeholder="01012345678"
-            className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white font-mono focus:outline-none focus:border-[#E51E2A]"
+            className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 font-mono focus:outline-none focus:border-[#E51E2A]"
           />
         </div>
 
@@ -178,30 +178,30 @@ export const OrderTrackingView: React.FC = () => {
 
       {/* Active Order Card */}
       {activeOrder && (
-        <div className="bg-[#121215] border border-[#24242a] rounded-xl p-5 sm:p-6 space-y-6 text-start">
+        <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6 space-y-6 text-start shadow-sm">
           {/* Order Header Summary */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#24242a]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-100">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg sm:text-xl font-bold text-white font-mono">
+                <span className="text-lg sm:text-xl font-bold text-zinc-900 font-mono">
                   #{activeOrder.id}
                 </span>
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase ${
                     activeOrder.status === 'delivered'
-                      ? 'bg-emerald-500/20 text-emerald-400'
+                      ? 'bg-emerald-100 text-emerald-700'
                       : activeOrder.status === 'cancelled'
-                      ? 'bg-rose-500/20 text-rose-400'
-                      : 'bg-[#E51E2A]/20 text-[#E51E2A]'
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-[#E51E2A]/10 text-[#E51E2A]'
                   }`}
                 >
                   {activeOrder.status.replace(/_/g, ' ')}
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <p className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                 <span>{language === 'ar' ? 'العميل:' : 'Customer:'} {activeOrder.customer.name}</span>
                 <span>•</span>
-                <span dir="ltr" className="font-mono text-zinc-300">
+                <span dir="ltr" className="font-mono text-zinc-600">
                   {activeOrder.customer.phone}
                 </span>
               </p>
@@ -210,9 +210,9 @@ export const OrderTrackingView: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveReceiptOrder(activeOrder)}
-                className="px-3 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#202026] text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors border border-[#24242a] cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-medium flex items-center gap-1.5 transition-colors border border-zinc-200 cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-zinc-400" />
+                <Printer className="w-3.5 h-3.5 text-zinc-500" />
                 <span>{t('printReceiptBtn')}</span>
               </button>
 
@@ -228,10 +228,10 @@ export const OrderTrackingView: React.FC = () => {
 
           {/* Progress Bar & Steps */}
           {activeOrder.status === 'cancelled' ? (
-            <div className="p-5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-center space-y-1 text-rose-400">
+            <div className="p-5 bg-rose-50 border border-rose-100 rounded-xl text-center space-y-1 text-rose-700">
               <AlertCircle className="w-6 h-6 mx-auto" />
               <h3 className="text-sm font-bold">{t('statusCancelled')}</h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 {language === 'ar'
                   ? 'تم إلغاء هذا الطلب من قبل الإدارة أو العميل.'
                   : 'This order was cancelled.'}
@@ -241,7 +241,7 @@ export const OrderTrackingView: React.FC = () => {
             <div className="space-y-5">
               {/* Progress Line */}
               <div className="relative">
-                <div className="hidden sm:block absolute top-1/2 left-0 right-0 h-0.5 bg-[#24242a] -translate-y-1/2 z-0">
+                <div className="hidden sm:block absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-100 -translate-y-1/2 z-0">
                   <div
                     className="bg-[#E51E2A] h-full transition-all duration-500"
                     style={{ width: `${(currentStepIdx / 4) * 100}%` }}
@@ -265,7 +265,7 @@ export const OrderTrackingView: React.FC = () => {
                               ? 'bg-emerald-600 text-white'
                               : isCurrent
                               ? 'bg-[#E51E2A] text-white'
-                              : 'bg-[#1a1a20] text-zinc-500 border border-[#2a2a34]'
+                              : 'bg-zinc-100 text-zinc-400 border border-zinc-200'
                           }`}
                         >
                           {step.icon}
@@ -273,7 +273,7 @@ export const OrderTrackingView: React.FC = () => {
                         <div>
                           <div
                             className={`text-xs font-medium ${
-                              isCurrent ? 'text-[#E51E2A] font-bold' : isCompleted ? 'text-white' : 'text-zinc-500'
+                              isCurrent ? 'text-[#E51E2A] font-bold' : isCompleted ? 'text-zinc-900' : 'text-zinc-400'
                             }`}
                           >
                             {label}
@@ -286,29 +286,29 @@ export const OrderTrackingView: React.FC = () => {
               </div>
 
               {/* Estimated ETA & Driver Box */}
-              <div className="bg-[#18181c] border border-[#24242a] p-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-zinc-50 border border-zinc-100 p-4 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-zinc-400" />
+                  <Clock className="w-4 h-4 text-zinc-500" />
                   <div>
-                    <div className="text-[10px] text-zinc-400">{t('estimatedArrival')}</div>
-                    <div className="text-sm font-bold text-white font-mono">
+                    <div className="text-[10px] text-zinc-500">{t('estimatedArrival')}</div>
+                    <div className="text-sm font-bold text-zinc-900 font-mono">
                       {activeOrder.estimatedDeliveryTime}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#24242a]">
+                <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200">
                   <div>
-                    <div className="text-[10px] text-zinc-400">
+                    <div className="text-[10px] text-zinc-500">
                       {language === 'ar' ? 'الفرع:' : 'Branch:'}
                     </div>
-                    <div className="text-xs font-semibold text-white">
+                    <div className="text-xs font-semibold text-zinc-900">
                       {language === 'ar' ? targetBranch.nameAr : targetBranch.nameEn}
                     </div>
                   </div>
                   <a
                     href={`tel:${targetBranch.phone}`}
-                    className="p-2 rounded-lg bg-[#202026] text-[#E51E2A] hover:bg-[#282830] transition-colors"
+                    className="p-2 rounded-lg bg-zinc-100 text-[#E51E2A] hover:bg-zinc-200 transition-colors"
                     title={t('callBranch')}
                   >
                     <PhoneCall className="w-3.5 h-3.5" />
@@ -319,22 +319,22 @@ export const OrderTrackingView: React.FC = () => {
           )}
 
           {/* Status History Logs */}
-          <div className="space-y-2 pt-4 border-t border-[#24242a]">
-            <h3 className="text-xs font-semibold text-zinc-300">
+          <div className="space-y-2 pt-4 border-t border-zinc-100">
+            <h3 className="text-xs font-semibold text-zinc-500">
               {language === 'ar' ? 'سجل تحديثات الطلب:' : 'Order Updates:'}
             </h3>
             <div className="space-y-1.5">
               {activeOrder.statusHistory.map((hist, hIdx) => (
                 <div
                   key={hIdx}
-                  className="p-2.5 bg-[#18181c] border border-[#24242a] rounded-lg flex items-center justify-between text-xs"
+                  className="p-2.5 bg-zinc-50 border border-zinc-100 rounded-lg flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#E51E2A]" />
-                    <span className="font-medium text-white capitalize">
+                    <span className="font-medium text-zinc-900 capitalize">
                       {hist.status.replace(/_/g, ' ')}
                     </span>
-                    {hist.note && <span className="text-zinc-400">- {hist.note}</span>}
+                    {hist.note && <span className="text-zinc-500">- {hist.note}</span>}
                   </div>
                   <span className="font-mono text-zinc-500 text-[10px]">
                     {new Date(hist.timestamp).toLocaleTimeString()}
@@ -345,12 +345,12 @@ export const OrderTrackingView: React.FC = () => {
           </div>
 
           {/* Ordered items review */}
-          <div className="space-y-2 pt-4 border-t border-[#24242a]">
-            <h3 className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+          <div className="space-y-2 pt-4 border-t border-zinc-100">
+            <h3 className="text-xs font-semibold text-zinc-500 flex items-center gap-1.5">
               <ShoppingBag className="w-3.5 h-3.5 text-[#E51E2A]" />
               <span>{language === 'ar' ? 'الأصناف في هذا الطلب:' : 'Items:'}</span>
             </h3>
-            <div className="divide-y divide-[#24242a] bg-[#101013] border border-[#24242a] rounded-xl p-3 space-y-2">
+            <div className="divide-y divide-zinc-100 bg-zinc-50 border border-zinc-100 rounded-xl p-3 space-y-2">
               {activeOrder.items.map((item, idx) => {
                 const name = language === 'ar' ? item.product.nameAr : item.product.nameEn;
                 return (
@@ -359,14 +359,14 @@ export const OrderTrackingView: React.FC = () => {
                       <img
                         src={item.product.image}
                         alt={name}
-                        className="w-8 h-8 rounded object-cover bg-black"
+                        className="w-8 h-8 rounded object-cover bg-zinc-100"
                       />
                       <div>
-                        <div className="font-medium text-white">
+                        <div className="font-medium text-zinc-900">
                           {item.quantity}x {name}
                         </div>
                         {item.selectedAddons.length > 0 && (
-                          <div className="text-[10px] text-zinc-400">
+                          <div className="text-[10px] text-zinc-500">
                             +{' '}
                             {item.selectedAddons
                               .map((a) => (language === 'ar' ? a.nameAr : a.nameEn))
@@ -375,14 +375,14 @@ export const OrderTrackingView: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <span className="font-mono font-bold text-zinc-300">
+                    <span className="font-mono font-bold text-zinc-700">
                       {item.totalPrice} {t('currency')}
                     </span>
                   </div>
                 );
               })}
 
-              <div className="pt-2 flex justify-between font-bold text-xs text-white">
+              <div className="pt-2 flex justify-between font-bold text-xs text-zinc-900">
                 <span>{t('total')}</span>
                 <span className="font-mono text-[#E51E2A]">
                   {activeOrder.total} {t('currency')}

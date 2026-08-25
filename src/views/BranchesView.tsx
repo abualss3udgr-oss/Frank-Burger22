@@ -55,20 +55,20 @@ export const BranchesView: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10">
       {/* 1. Header Hero Banner */}
-      <div className="bg-gradient-to-br from-[#141418] via-[#181820] to-[#121216] border border-[#262630] rounded-3xl p-6 sm:p-10 text-start relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#E51E2A]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="bg-gradient-to-br from-zinc-50 via-white to-zinc-100 border border-zinc-200 rounded-3xl p-6 sm:p-10 text-start relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#E51E2A]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         
         <div className="relative z-10 max-w-2xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#E51E2A]/15 text-[#E51E2A] border border-[#E51E2A]/30">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#E51E2A]/10 text-[#E51E2A] border border-[#E51E2A]/20">
             <Sparkles className="w-3.5 h-3.5" />
             <span>{language === 'ar' ? 'خدمة سريعة وضيافة أصيلة' : 'Direct Support & Orders'}</span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black text-white font-heading tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-black text-zinc-900 font-heading tracking-tight">
             {language === 'ar' ? 'اتصل بنا' : 'Contact Us'}
           </h1>
 
-          <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
             {language === 'ar'
               ? 'تواصل معنا مباشرة لتسجيل طلباتك، الاستفسارات، أو حجز الوجبات والمناسبات، أو شرفنا بزيارتك في مطعمنا.'
               : 'Get in touch directly for instant orders, inquiries, or party reservations, or visit us at our restaurant.'}
@@ -80,25 +80,25 @@ export const BranchesView: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <MapIcon className="w-5 h-5 text-[#E51E2A]" />
-          <h2 className="text-xl font-bold text-white font-heading">
+          <h2 className="text-xl font-bold text-zinc-900 font-heading">
             {language === 'ar' ? 'موقع المطعم' : 'Restaurant Location'}
           </h2>
         </div>
 
-        <div className="bg-[#121215] border border-[#24242a] rounded-3xl overflow-hidden shadow-xl max-w-4xl mx-auto">
+        <div className="bg-white border border-zinc-200 rounded-3xl overflow-hidden shadow-sm max-w-4xl mx-auto">
           <div className="relative h-48 sm:h-64 w-full">
             <img
               src={MAIN_BRANCH.image}
               alt={MAIN_BRANCH.nameEn}
-              className="w-full h-full object-cover opacity-70 filter saturate-150"
+              className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#121215] via-[#121215]/50 to-transparent flex flex-col justify-end p-6">
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent flex flex-col justify-end p-6">
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E51E2A] text-white">
                   {language === 'ar' ? 'صالة مكيفة ومجهزة' : 'Dine-in Ready'}
                 </span>
               </div>
-              <h2 className="text-xl sm:text-3xl font-bold text-white font-heading">
+              <h2 className="text-xl sm:text-3xl font-bold text-zinc-900 font-heading">
                 {language === 'ar' ? MAIN_BRANCH.nameAr : MAIN_BRANCH.nameEn}
               </h2>
             </div>
@@ -107,20 +107,20 @@ export const BranchesView: React.FC = () => {
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6 text-start">
             <div className="space-y-4">
               <div>
-                <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
+                <div className="flex items-center gap-2 text-zinc-500 text-xs mb-1">
                   <MapPin className="w-3.5 h-3.5" />
                   <span className="font-semibold uppercase tracking-wider">{language === 'ar' ? 'العنوان' : 'Address'}</span>
                 </div>
-                <p className="text-sm text-white font-medium">
+                <p className="text-sm text-zinc-900 font-medium">
                   {language === 'ar' ? MAIN_BRANCH.addressAr : MAIN_BRANCH.addressEn}
                 </p>
               </div>
               <div>
-                <div className="flex items-center gap-2 text-zinc-400 text-xs mb-1">
+                <div className="flex items-center gap-2 text-zinc-500 text-xs mb-1">
                   <Clock className="w-3.5 h-3.5" />
                   <span className="font-semibold uppercase tracking-wider">{language === 'ar' ? 'مواعيد العمل' : 'Hours'}</span>
                 </div>
-                <p className="text-sm text-white font-medium font-mono">
+                <p className="text-sm text-zinc-900 font-medium font-mono">
                   {language === 'ar' ? MAIN_BRANCH.hoursAr : MAIN_BRANCH.hoursEn}
                 </p>
               </div>
@@ -131,7 +131,7 @@ export const BranchesView: React.FC = () => {
                 href={MAIN_BRANCH.mapUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-2.5 px-4 rounded-xl bg-[#18181c] hover:bg-[#22222a] border border-[#282830] text-white hover:text-[#E51E2A] text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+                className="w-full py-2.5 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-900 hover:text-[#E51E2A] text-xs font-bold flex items-center justify-center gap-2 transition-colors"
               >
                 <Navigation className="w-4 h-4" />
                 <span>{language === 'ar' ? 'افتح على خرائط جوجل' : 'Open in Google Maps'}</span>
@@ -151,21 +151,21 @@ export const BranchesView: React.FC = () => {
       {/* 3. Social Channels */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* WhatsApp Card */}
-        <div className="bg-[#121215] border border-[#24242a] hover:border-emerald-500/50 transition-all rounded-2xl p-5 text-start flex flex-col justify-between shadow-md">
+        <div className="bg-white border border-zinc-200 hover:border-emerald-500/50 transition-all rounded-2xl p-5 text-start flex flex-col justify-between shadow-sm">
           <div className="space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
               <MessageCircle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white font-heading">
+              <h3 className="text-sm font-bold text-zinc-900 font-heading">
                 {language === 'ar' ? 'محادثة واتساب الفورية' : 'WhatsApp Chat'}
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-500 mt-0.5">
                 {language === 'ar' ? 'أرسل موقعك أو استفسارك مباشرة' : 'Send your location or inquiries'}
               </p>
             </div>
           </div>
-          <div className="pt-4 mt-4 border-t border-[#202026]">
+          <div className="pt-4 mt-4 border-t border-zinc-100">
             <a
               href={`https://wa.me/20${cleanWhatsapp.replace(/^0+/, '')}`}
               target="_blank"
@@ -179,24 +179,24 @@ export const BranchesView: React.FC = () => {
         </div>
 
         {/* Call Card */}
-        <div className="bg-[#121215] border border-[#24242a] rounded-2xl p-5 text-start flex flex-col justify-between shadow-md">
+        <div className="bg-white border border-zinc-200 rounded-2xl p-5 text-start flex flex-col justify-between shadow-sm">
           <div className="space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-[#E51E2A]/10 border border-[#E51E2A]/30 text-[#E51E2A] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-[#E51E2A]/10 border border-[#E51E2A]/20 text-[#E51E2A] flex items-center justify-center">
               <Phone className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white font-heading">
+              <h3 className="text-sm font-bold text-zinc-900 font-heading">
                 {language === 'ar' ? 'رقم الهاتف الموحد' : 'Direct Phone Line'}
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5 font-mono">
+              <p className="text-xs text-zinc-500 mt-0.5 font-mono">
                 {phoneNumber}
               </p>
             </div>
           </div>
-          <div className="pt-4 mt-4 border-t border-[#202026]">
+          <div className="pt-4 mt-4 border-t border-zinc-100">
             <a
               href={`tel:${phoneNumber}`}
-              className="w-full py-2 px-3 rounded-xl bg-[#18181c] hover:bg-[#202026] border border-[#282830] text-zinc-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full py-2 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 hover:text-zinc-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Phone className="w-3.5 h-3.5 text-[#E51E2A]" />
               <span>{language === 'ar' ? 'اتصل الآن' : 'Call Now'}</span>
@@ -209,16 +209,16 @@ export const BranchesView: React.FC = () => {
       <div className="text-start">
         <form
           onSubmit={handleSubmitMessage}
-          className="bg-[#121215] border border-[#24242a] rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl max-w-3xl mx-auto"
+          className="bg-white border border-zinc-200 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm max-w-3xl mx-auto"
         >
-          <div className="space-y-1 pb-4 border-b border-[#22222a]">
+          <div className="space-y-1 pb-4 border-b border-zinc-100">
             <div className="flex items-center gap-2">
               <Mail className="w-5 h-5 text-[#E51E2A]" />
-              <h3 className="text-lg font-bold text-white font-heading">
+              <h3 className="text-lg font-bold text-zinc-900 font-heading">
                 {language === 'ar' ? 'أرسل رسالة أو اقتراح للإدارة' : 'Send a Message or Feedback'}
               </h3>
             </div>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-zinc-500">
               {language === 'ar'
                 ? 'رأيك يهمنا دائماً لتحسين الخدمة وتقديم أفضل تجربة أكل.'
                 : 'Your feedback helps us provide the best dining experience.'}
@@ -226,12 +226,12 @@ export const BranchesView: React.FC = () => {
           </div>
 
           {isSubmitted ? (
-            <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-2 my-4">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-              <h4 className="text-sm font-bold text-white">
+            <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-2xl text-center space-y-2 my-4">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+              <h4 className="text-sm font-bold text-zinc-900">
                 {language === 'ar' ? 'تم استلام رسالتك بنجاح!' : 'Message Received!'}
               </h4>
-              <p className="text-xs text-zinc-300">
+              <p className="text-xs text-zinc-600">
                 {language === 'ar'
                   ? 'شكراً لتواصلك مع فرانك برجر، سيقوم فريقنا بالرد عليك في أقرب وقت.'
                   : 'Thank you for reaching out to Frank Burger, our team will respond promptly.'}
@@ -240,7 +240,7 @@ export const BranchesView: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-semibold text-zinc-700 mb-1">
                   {language === 'ar' ? 'الاسم بالكامل' : 'Full Name'} <span className="text-[#E51E2A]">*</span>
                 </label>
                 <input
@@ -249,12 +249,12 @@ export const BranchesView: React.FC = () => {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder={language === 'ar' ? 'مثال: أحمد محمد' : 'e.g. John Doe'}
-                  className="w-full bg-[#18181c] border border-[#282830] rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-semibold text-zinc-700 mb-1">
                   {language === 'ar' ? 'رقم الهاتف / الواتساب' : 'Phone / WhatsApp'} <span className="text-[#E51E2A]">*</span>
                 </label>
                 <input
@@ -263,18 +263,18 @@ export const BranchesView: React.FC = () => {
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
                   placeholder="01012345678"
-                  className="w-full bg-[#18181c] border border-[#282830] rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 font-mono focus:outline-none focus:border-[#E51E2A]"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-semibold text-zinc-700 mb-1">
                   {language === 'ar' ? 'نوع التواصل' : 'Topic'}
                 </label>
                 <select
                   value={formSubject}
                   onChange={(e) => setFormSubject(e.target.value as any)}
-                  className="w-full bg-[#18181c] border border-[#282830] rounded-xl py-2.5 px-3 text-xs text-white focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 px-3 text-xs text-zinc-900 focus:outline-none focus:border-[#E51E2A]"
                 >
                   <option value="order_inquiry">
                     {language === 'ar' ? 'استفسار عن طلب أو المنيو' : 'Order or Menu Inquiry'}
@@ -292,7 +292,7 @@ export const BranchesView: React.FC = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                <label className="block text-xs font-semibold text-zinc-700 mb-1">
                   {language === 'ar' ? 'نص الرسالة' : 'Your Message'} <span className="text-[#E51E2A]">*</span>
                 </label>
                 <textarea
@@ -305,7 +305,7 @@ export const BranchesView: React.FC = () => {
                       ? 'اكتب رسالتك أو استفسارك هنا...'
                       : 'Type your message or inquiry here...'
                   }
-                  className="w-full bg-[#18181c] border border-[#282830] rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A] resize-none"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A] resize-none"
                 />
               </div>
 

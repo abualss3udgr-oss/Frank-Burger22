@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
+import { useAuth } from '../context/AuthContext';
+import { AuthView } from './AuthView';
 import {
   History,
   Heart,
@@ -19,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const UserProfileView: React.FC = () => {
+  const { user } = useAuth();
   const {
     customerProfile,
     updateCustomerProfile,
@@ -72,6 +75,10 @@ export const UserProfileView: React.FC = () => {
     );
   }, [lookupQuery, myDeviceOrders, orders]);
 
+  if (!user) {
+    return <AuthView />;
+  }
+
   const handleCopyDeviceId = () => {
     if (deviceInfo?.deviceId) {
       navigator.clipboard.writeText(deviceInfo.deviceId);
@@ -115,89 +122,20 @@ export const UserProfileView: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* 1. Device Identification Banner */}
-      <div className="bg-gradient-to-r from-[#121216] via-[#16161c] to-[#121216] border border-[#262630] rounded-2xl p-5 sm:p-6 text-start shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-[#E51E2A]/10 border border-[#E51E2A]/30 text-[#E51E2A] flex items-center justify-center font-bold text-xl shrink-0">
-              <Smartphone className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-bold text-white font-heading">
-                  {language === 'ar' ? 'طلباتك السابقة من هذا الجهاز' : 'Your Previous Orders (This Device)'}
-                </h1>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  {language === 'ar' ? 'جهازك متصل' : 'Device Active'}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                {language === 'ar'
-                  ? 'تم التعرف على جهازك تلقائياً لسرعة مراجعة طلباتك السابقة وإعادة طلبها بدون الحاجة لتسجيل دخول.'
-                  : 'Your device is automatically authenticated to review and reorder your past meals instantly.'}
-              </p>
-              {loyaltyPoints > 0 && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
-                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                  <span className="text-xs font-bold text-amber-400">
-                    {loyaltyPoints} {language === 'ar' ? 'نقطة ولاء' : 'Loyalty Points'}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={handleCopyDeviceId}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a22] hover:bg-[#22222c] border border-[#2a2a36] text-xs text-zinc-300 transition-colors cursor-pointer self-start sm:self-auto"
-            title="Copy Device ID"
-          >
-            <span className="font-mono text-zinc-300 font-bold">{deviceInfo?.deviceId || 'DEV-AUTO'}</span>
-            {copiedDevId ? (
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-zinc-400" />
-            )}
-          </button>
-        </div>
-
-        {/* Technical Device & Network Telemetry Pill Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t border-[#22222a] text-xs">
-          <div className="bg-[#0e0e12] border border-[#202028] rounded-xl px-3 py-2 flex items-center justify-between">
-            <span className="text-zinc-400 text-[11px]">{language === 'ar' ? 'عنوان الـ MAC:' : 'MAC Address:'}</span>
-            <span className="font-mono text-zinc-200 font-semibold text-[11px]">{deviceInfo?.macAddress || '4C:D5:77:2A:90:E1'}</span>
-          </div>
-
-          <div className="bg-[#0e0e12] border border-[#202028] rounded-xl px-3 py-2 flex items-center justify-between">
-            <span className="text-zinc-400 text-[11px] flex items-center gap-1">
-              <Wifi className="w-3 h-3 text-[#E51E2A]" />
-              {language === 'ar' ? 'عنوان الـ IP:' : 'Client IP:'}
-            </span>
-            <span className="font-mono text-emerald-400 font-semibold text-[11px]">{deviceInfo?.ipAddress || '197.38.112.45'}</span>
-          </div>
-
-          <div className="bg-[#0e0e12] border border-[#202028] rounded-xl px-3 py-2 flex items-center justify-between">
-            <span className="text-zinc-400 text-[11px]">{language === 'ar' ? 'نوع الجهاز:' : 'Device:'}</span>
-            <span className="text-zinc-300 font-medium text-[11px] truncate max-w-[140px]">{deviceInfo?.deviceModel || 'هذا المتصفح'}</span>
-          </div>
-        </div>
-      </div>
-
       {/* 2. Navigation Tabs */}
-      <div className="flex items-center justify-between gap-3 border-b border-[#24242a] pb-2 overflow-x-auto">
+      <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-2 overflow-x-auto">
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setActiveTab('orders')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'orders'
                 ? 'bg-[#E51E2A] text-white'
-                : 'text-zinc-400 hover:text-white hover:bg-[#18181c]'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
             }`}
           >
             <History className="w-3.5 h-3.5" />
             <span>{language === 'ar' ? 'طلباتك السابقة' : 'Past Orders'}</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/30 font-mono">
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/5 font-mono">
               {displayedOrders.length}
             </span>
           </button>
@@ -207,7 +145,7 @@ export const UserProfileView: React.FC = () => {
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'address'
                 ? 'bg-[#E51E2A] text-white'
-                : 'text-zinc-400 hover:text-white hover:bg-[#18181c]'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
@@ -219,12 +157,12 @@ export const UserProfileView: React.FC = () => {
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'favorites'
                 ? 'bg-[#E51E2A] text-white'
-                : 'text-zinc-400 hover:text-white hover:bg-[#18181c]'
+                : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
             }`}
           >
             <Heart className="w-3.5 h-3.5" />
             <span>{t('favoritesTab')}</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/30 font-mono">
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/5 font-mono">
               {favorites.length}
             </span>
           </button>
@@ -232,13 +170,13 @@ export const UserProfileView: React.FC = () => {
 
         {activeTab === 'orders' && (
           <div className="relative hidden sm:block">
-            <Search className="w-3.5 h-3.5 text-zinc-500 absolute top-2.5 right-2.5 rtl:right-auto rtl:left-2.5 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute top-2.5 right-2.5 rtl:right-auto rtl:left-2.5 pointer-events-none" />
             <input
               type="text"
               value={lookupQuery}
               onChange={(e) => setLookupQuery(e.target.value)}
               placeholder={language === 'ar' ? 'بحث برقم الطلب أو الموبايل...' : 'Filter by Order # or Phone...'}
-              className="bg-[#141418] border border-[#24242c] rounded-lg py-1.5 px-3 rtl:pl-8 ltr:pr-8 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A] w-56"
+              className="bg-white border border-zinc-200 rounded-lg py-1.5 px-3 rtl:pl-8 ltr:pr-8 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A] w-56"
             />
           </div>
         )}
@@ -248,12 +186,12 @@ export const UserProfileView: React.FC = () => {
       {activeTab === 'orders' && (
         <div className="space-y-4">
           {displayedOrders.length === 0 ? (
-            <div className="p-10 text-center bg-[#121215] border border-[#24242a] rounded-2xl space-y-3">
-              <ShoppingBag className="w-10 h-10 text-zinc-500 mx-auto" />
-              <h3 className="text-base font-bold text-white">
+            <div className="p-10 text-center bg-white border border-zinc-200 rounded-2xl space-y-3">
+              <ShoppingBag className="w-10 h-10 text-zinc-400 mx-auto" />
+              <h3 className="text-base font-bold text-zinc-900">
                 {language === 'ar' ? 'لا توجد طلبات مسجلة لهذا الجهاز حتى الآن' : 'No past orders on this device yet'}
               </h3>
-              <p className="text-xs text-zinc-400 max-w-md mx-auto">
+              <p className="text-xs text-zinc-500 max-w-md mx-auto">
                 {language === 'ar'
                   ? 'بمجرد أن تقوم بالطلب من المنيو، سيظهر طلبك وتفاصيل الفاتورة وحالته المباشرة هنا تلقائياً.'
                   : 'As soon as you place an order from the menu, its live status and receipts will appear here automatically.'}
@@ -267,43 +205,43 @@ export const UserProfileView: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="bg-[#121215] border border-[#24242a] rounded-2xl overflow-hidden shadow-lg">
+            <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-start border-collapse min-w-[800px]">
                   <thead>
-                    <tr className="bg-[#18181c] border-b border-[#24242a]">
-                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                    <tr className="bg-zinc-50 border-b border-zinc-100">
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-500 text-start">
                         {language === 'ar' ? 'رقم الطلب' : 'Order ID'}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-500 text-start">
                         {language === 'ar' ? 'التاريخ' : 'Date'}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-500 text-start">
                         {language === 'ar' ? 'المنتجات' : 'Items'}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-500 text-start">
                         {language === 'ar' ? 'الحالة' : 'Status'}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-start">
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-500 text-start">
                         {language === 'ar' ? 'الإجمالي' : 'Total'}
                       </th>
-                      <th className="px-4 py-3 text-xs font-semibold text-zinc-400 text-center">
+                      <th className="px-4 py-3 text-xs font-semibold text-zinc-500 text-center">
                         {language === 'ar' ? 'الإجراءات' : 'Actions'}
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#24242a]">
+                  <tbody className="divide-y divide-zinc-100">
                     {displayedOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-[#151519] transition-colors">
+                      <tr key={order.id} className="hover:bg-zinc-50 transition-colors">
                         {/* Order ID */}
                         <td className="px-4 py-4 align-top">
-                          <span className="text-sm font-bold text-white font-mono bg-[#18181e] px-2.5 py-1 rounded-lg border border-[#282832] inline-block">
+                          <span className="text-sm font-bold text-zinc-900 font-mono bg-zinc-100 px-2.5 py-1 rounded-lg border border-zinc-200 inline-block">
                             #{order.id}
                           </span>
                         </td>
                         
                         {/* Date */}
-                        <td className="px-4 py-4 align-top text-xs text-zinc-300">
+                        <td className="px-4 py-4 align-top text-xs text-zinc-700">
                           <div className="font-mono">
                             {new Date(order.orderDate).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
                               day: 'numeric',
@@ -325,10 +263,10 @@ export const UserProfileView: React.FC = () => {
                             {order.items.map((it, idx) => (
                               <div key={idx} className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-bold text-white font-mono bg-[#202026] px-1.5 py-0.2 rounded text-[11px]">
+                                  <span className="font-bold text-zinc-900 font-mono bg-zinc-100 px-1.5 py-0.2 rounded text-[11px]">
                                     {it.quantity}x
                                   </span>
-                                  <span className="text-zinc-200 font-medium">
+                                  <span className="text-zinc-900 font-medium">
                                     {language === 'ar' ? it.product.nameAr : it.product.nameEn}
                                   </span>
                                 </div>
@@ -349,14 +287,14 @@ export const UserProfileView: React.FC = () => {
                                 {order.status === 'delivered' && (
                                   <button
                                     onClick={() => setReviewingItemId(reviewingItemId === it.cartItemId ? null : it.cartItemId)}
-                                    className="text-[10px] text-[#E51E2A] underline hover:text-white transition-colors cursor-pointer text-start ms-6 mt-0.5 w-max"
+                                    className="text-[10px] text-[#E51E2A] underline hover:text-[#c81520] transition-colors cursor-pointer text-start ms-6 mt-0.5 w-max"
                                   >
                                     {language === 'ar' ? 'تقييم المنتج' : 'Rate Product'}
                                   </button>
                                 )}
                                 
                                 {reviewingItemId === it.cartItemId && (
-                                  <div className="mt-1 ms-6 p-2 bg-[#18181c] border border-[#24242a] rounded-lg flex flex-col gap-2">
+                                  <div className="mt-1 ms-6 p-2 bg-zinc-50 border border-zinc-200 rounded-lg flex flex-col gap-2">
                                     <div className="flex gap-1.5">
                                       {[1, 2, 3, 4, 5].map((star) => (
                                         <button
@@ -365,7 +303,7 @@ export const UserProfileView: React.FC = () => {
                                           className="cursor-pointer transition-colors"
                                         >
                                           <svg
-                                            className={`w-4 h-4 ${reviewRating >= star ? 'text-amber-400 fill-amber-400' : 'text-zinc-600'}`}
+                                            className={`w-4 h-4 ${reviewRating >= star ? 'text-amber-500 fill-amber-500' : 'text-zinc-300'}`}
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -381,7 +319,7 @@ export const UserProfileView: React.FC = () => {
                                         value={reviewComment}
                                         onChange={(e) => setReviewComment(e.target.value)}
                                         placeholder={language === 'ar' ? 'تعليق...' : 'Comment...'}
-                                        className="flex-1 bg-[#0a0a0c] border border-[#282830] rounded p-1 text-[11px] text-white"
+                                        className="flex-1 bg-white border border-zinc-200 rounded p-1 text-[11px] text-zinc-900"
                                       />
                                       <button
                                         onClick={() => handleSubmitReview(it.productId, it.cartItemId)}
@@ -402,10 +340,10 @@ export const UserProfileView: React.FC = () => {
                           <span
                             className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase inline-flex items-center justify-center text-center ${
                               order.status === 'delivered'
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                                 : order.status === 'preparing'
-                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                                : 'bg-[#E51E2A]/20 text-[#E51E2A] border border-[#E51E2A]/30'
+                                ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                                : 'bg-[#E51E2A]/10 text-[#E51E2A] border border-[#E51E2A]/20'
                             }`}
                           >
                             {order.status.replace(/_/g, ' ')}
@@ -418,7 +356,7 @@ export const UserProfileView: React.FC = () => {
                         {/* Total */}
                         <td className="px-4 py-4 align-top">
                           <div className="flex flex-col">
-                            <span className="text-sm font-black text-white font-mono">
+                            <span className="text-sm font-black text-zinc-900 font-mono">
                               {order.total} <span className="text-[10px] text-[#E51E2A] font-bold">{t('currency')}</span>
                             </span>
                             <span className="text-[10px] text-zinc-500 capitalize mt-1">
@@ -435,17 +373,17 @@ export const UserProfileView: React.FC = () => {
                                 setActiveTrackingOrderId(order.id);
                                 setCurrentView('tracking');
                               }}
-                              className="px-3 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#22222a] text-[11px] font-medium text-zinc-200 hover:text-white flex items-center justify-center gap-1.5 transition-colors border border-[#282832] cursor-pointer"
+                              className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-[11px] font-medium text-zinc-700 hover:text-zinc-900 flex items-center justify-center gap-1.5 transition-colors border border-zinc-200 cursor-pointer"
                             >
-                              <Compass className="w-3.5 h-3.5 text-blue-400" />
+                              <Compass className="w-3.5 h-3.5 text-blue-600" />
                               <span>{t('trackOrderBtn')}</span>
                             </button>
 
                             <button
                               onClick={() => setActiveReceiptOrder(order)}
-                              className="px-3 py-1.5 rounded-lg bg-[#18181c] hover:bg-[#22222a] text-[11px] font-medium text-zinc-200 hover:text-white flex items-center justify-center gap-1.5 transition-colors border border-[#282832] cursor-pointer"
+                              className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-[11px] font-medium text-zinc-700 hover:text-zinc-900 flex items-center justify-center gap-1.5 transition-colors border border-zinc-200 cursor-pointer"
                             >
-                              <Printer className="w-3.5 h-3.5 text-zinc-400" />
+                              <Printer className="w-3.5 h-3.5 text-zinc-500" />
                               <span>{t('printReceiptBtn')}</span>
                             </button>
 
@@ -472,13 +410,13 @@ export const UserProfileView: React.FC = () => {
       {activeTab === 'address' && (
         <form
           onSubmit={handleSaveProfile}
-          className="bg-[#121215] border border-[#24242a] rounded-2xl p-6 space-y-5 text-start max-w-xl shadow-lg"
+          className="bg-white border border-zinc-200 rounded-2xl p-6 space-y-5 text-start max-w-xl shadow-sm"
         >
           <div className="space-y-1">
-            <h2 className="text-base font-bold text-white font-heading">
+            <h2 className="text-base font-bold text-zinc-900 font-heading">
               {language === 'ar' ? 'بيانات التوصيل السريعة لهذا الجهاز' : 'Fast Checkout Details for this Device'}
             </h2>
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-zinc-500">
               {language === 'ar'
                 ? 'يتم ملء هذه البيانات تلقائياً في صفحة إتمام الطلب لتوفير وقتك في كل مرة تطلب فيها من هذا الجهاز.'
                 : 'These details are pre-filled automatically on checkout from this device for faster ordering.'}
@@ -487,50 +425,50 @@ export const UserProfileView: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">{t('fullName')}</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1">{t('fullName')}</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="أحمد علي"
-                className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#E51E2A]"
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">{t('phoneNumber')}</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1">{t('phoneNumber')}</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="01012345678"
-                className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white font-mono focus:outline-none focus:border-[#E51E2A]"
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 placeholder-zinc-400 font-mono focus:outline-none focus:border-[#E51E2A]"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">{t('whatsappNumber')}</label>
+            <label className="block text-xs font-medium text-zinc-500 mb-1">{t('whatsappNumber')}</label>
             <input
               type="tel"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               placeholder="01012345678"
-              className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white font-mono focus:outline-none focus:border-[#E51E2A]"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 placeholder-zinc-400 font-mono focus:outline-none focus:border-[#E51E2A]"
             />
           </div>
 
-          <div className="pt-2 border-t border-[#24242a] space-y-3">
-            <h3 className="text-xs font-semibold text-zinc-300">
+          <div className="pt-2 border-t border-zinc-100 space-y-3">
+            <h3 className="text-xs font-semibold text-zinc-500">
               {t('deliveryAddressTitle')}
             </h3>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">{t('selectZone')}</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1">{t('selectZone')}</label>
               <select
                 value={deliveryZoneId}
                 onChange={(e) => setDeliveryZoneId(e.target.value)}
-                className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#E51E2A]"
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 focus:outline-none focus:border-[#E51E2A]"
               >
                 {deliveryZones.map((z) => (
                   <option key={z.id} value={z.id}>
@@ -542,36 +480,36 @@ export const UserProfileView: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1">{t('streetAddress')}</label>
+                <label className="block text-xs font-medium text-zinc-500 mb-1">{t('streetAddress')}</label>
                 <input
                   type="text"
                   value={addressStreet}
                   onChange={(e) => setAddressStreet(e.target.value)}
                   placeholder="شارع الجمهورية - أمام الجامعة"
-                  className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1">{t('buildingNumber')}</label>
+                <label className="block text-xs font-medium text-zinc-500 mb-1">{t('buildingNumber')}</label>
                 <input
                   type="text"
                   value={addressBuilding}
                   onChange={(e) => setAddressBuilding(e.target.value)}
                   placeholder="عمارة 14 - الدور 3 - شقة 5"
-                  className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">{t('deliveryNotes')}</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1">{t('deliveryNotes')}</label>
               <input
                 type="text"
                 value={addressNotes}
                 onChange={(e) => setAddressNotes(e.target.value)}
                 placeholder="ملاحظات للكابتن..."
-                className="w-full bg-[#18181c] border border-[#282830] rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#E51E2A]"
+                className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A]"
               />
             </div>
           </div>
@@ -586,7 +524,7 @@ export const UserProfileView: React.FC = () => {
             </button>
 
             {savedSuccess && (
-              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+              <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                 <Check className="w-3.5 h-3.5" />
                 <span>{language === 'ar' ? 'تم الحفظ على هذا الجهاز بنجاح!' : 'Saved to this device successfully!'}</span>
               </span>
@@ -599,12 +537,12 @@ export const UserProfileView: React.FC = () => {
       {activeTab === 'favorites' && (
         <div>
           {favoriteProducts.length === 0 ? (
-            <div className="p-10 text-center bg-[#121215] border border-[#24242a] rounded-2xl space-y-2">
-              <Heart className="w-8 h-8 text-zinc-500 mx-auto" />
-              <h3 className="text-sm font-semibold text-white">
+            <div className="p-10 text-center bg-white border border-zinc-200 rounded-2xl space-y-2">
+              <Heart className="w-8 h-8 text-zinc-400 mx-auto" />
+              <h3 className="text-sm font-semibold text-zinc-900">
                 {language === 'ar' ? 'لم تقم بحفظ أي أصناف في المفضلة بعد' : 'No favorites saved yet'}
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 {language === 'ar'
                   ? 'اضغط على علامة القلب على أي صنف في المنيو لحفظه في هذا الجهاز.'
                   : 'Click the heart icon on any burger to bookmark it on this device.'}

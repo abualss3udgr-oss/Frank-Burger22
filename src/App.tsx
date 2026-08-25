@@ -1,4 +1,5 @@
 import React from 'react';
+import { AuthProvider } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -26,7 +27,7 @@ const MainContent: React.FC = () => {
   // If in Admin portal, render dedicated standalone Admin & POS environment
   if (currentView === 'admin') {
     return (
-      <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col font-sans selection:bg-[#E51E2A] selection:text-white">
+      <div className="min-h-screen bg-[#ffffff] text-zinc-900 flex flex-col font-sans selection:bg-[#E51E2A] selection:text-white">
         <main className="flex-1">
           <AdminView />
         </main>
@@ -38,7 +39,7 @@ const MainContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-zinc-100 flex flex-col font-sans selection:bg-[#E51E2A] selection:text-white">
+    <div className="min-h-screen bg-[#ffffff] text-zinc-900 flex flex-col font-sans selection:bg-[#E51E2A] selection:text-white">
       {/* Top Navbar */}
       <Navbar />
 
@@ -70,8 +71,10 @@ const MainContent: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainContent />
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <MainContent />
+      </AppProvider>
+    </AuthProvider>
   );
 }

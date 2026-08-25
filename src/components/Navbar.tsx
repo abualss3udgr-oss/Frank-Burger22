@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { auth } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
 import {
   ShoppingBag,
   Globe,
@@ -8,9 +11,13 @@ import {
   History,
   ShieldCheck,
   Smartphone,
+  LogOut,
+  LogIn,
+  User,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
+  const { user } = useAuth();
   const {
     language,
     toggleLanguage,
@@ -37,7 +44,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0c0c0e]/95 backdrop-blur-md border-b border-[#24242a]">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
@@ -49,7 +56,7 @@ export const Navbar: React.FC = () => {
             className="flex items-center gap-2.5 text-start cursor-pointer group"
           >
             <img 
-              src="https://res.cloudinary.com/fwxyu7hh/image/upload/f_auto,q_auto/Logo" 
+              src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png" 
               alt="Frank Burger" 
               className="h-7 sm:h-9 md:h-10 w-auto object-contain transition-transform group-hover:scale-105"
             />
@@ -69,8 +76,8 @@ export const Navbar: React.FC = () => {
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? 'text-[#E51E2A] bg-[#18181c] shadow-inner font-bold'
-                      : 'text-zinc-300 hover:text-white hover:bg-[#18181c]/60'
+                      ? 'text-[#E51E2A] bg-zinc-100 shadow-inner font-bold'
+                      : 'text-zinc-600 hover:text-black hover:bg-zinc-100/60'
                   }`}
                 >
                   {item.label}
@@ -84,7 +91,7 @@ export const Navbar: React.FC = () => {
             {/* Language Switch */}
             <button
               onClick={toggleLanguage}
-              className="hidden md:flex px-2.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-300 hover:text-white hover:bg-[#18181c] transition-colors items-center gap-1 cursor-pointer border border-[#24242a]"
+              className="hidden md:flex px-2.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-600 hover:text-black hover:bg-zinc-100 transition-colors items-center gap-1 cursor-pointer border border-zinc-200"
               title="Change Language"
             >
               <Globe className="w-3.5 h-3.5 text-zinc-400" />
@@ -92,6 +99,7 @@ export const Navbar: React.FC = () => {
             </button>
 
             {/* Previous Orders Button (Identified by Device IP / MAC) */}
+            {/* Profile / Auth Button */}
             <button
               onClick={() => {
                 setCurrentView('profile');
@@ -99,24 +107,14 @@ export const Navbar: React.FC = () => {
               }}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer border ${
                 currentView === 'profile'
-                  ? 'bg-[#18181c] text-[#E51E2A] border-[#E51E2A]/50'
-                  : 'bg-[#141418] text-zinc-300 hover:text-white hover:bg-[#1c1c22] border-[#24242a]'
+                  ? 'bg-zinc-100 text-[#E51E2A] border-[#E51E2A]/50'
+                  : 'bg-zinc-50 text-zinc-600 hover:text-black hover:bg-zinc-100 border-zinc-200'
               }`}
-              title={
-                language === 'ar'
-                  ? `طلباتك السابقة (معرّف جهازك: ${deviceInfo?.deviceId || 'DEV-AUTO'})`
-                  : `Previous Orders (Device: ${deviceInfo?.deviceId || 'DEV-AUTO'})`
-              }
             >
-              <History className="w-3.5 h-3.5 text-[#E51E2A]" />
+              {user ? <User className="w-3.5 h-3.5" /> : <LogIn className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">
-                {language === 'ar' ? 'طلباتك السابقة' : 'Previous Orders'}
+                {user ? (language === 'ar' ? 'حسابي' : 'My Account') : (language === 'ar' ? 'تسجيل دخول' : 'Login')}
               </span>
-              {myDeviceOrders.length > 0 && (
-                <span className="bg-[#E51E2A]/20 text-[#E51E2A] text-[10px] font-mono font-bold px-1.5 py-0.2 rounded">
-                  {myDeviceOrders.length}
-                </span>
-              )}
             </button>
 
             {/* Cart Button */}
@@ -136,7 +134,7 @@ export const Navbar: React.FC = () => {
             {/* Mobile Menu Toggle Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-zinc-300 hover:text-white hover:bg-[#18181c] cursor-pointer"
+              className="md:hidden p-2 rounded-lg text-zinc-600 hover:text-black hover:bg-zinc-100 cursor-pointer"
               aria-label="Toggle Navigation"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
@@ -147,7 +145,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Collapsible Navigation Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#121215] border-b border-[#24242a] px-4 py-3 space-y-1">
+        <div className="md:hidden bg-white border-b border-zinc-200 px-4 py-3 space-y-1">
           {navItems.map((item) => (
             <button
               key={item.view}
@@ -160,27 +158,27 @@ export const Navbar: React.FC = () => {
               className={`w-full text-start px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-between cursor-pointer ${
                 currentView === item.view
                   ? 'bg-[#E51E2A] text-white'
-                  : 'text-zinc-200 hover:bg-[#18181c]'
+                  : 'text-zinc-700 hover:bg-zinc-100'
               }`}
             >
               <span>{item.label}</span>
             </button>
           ))}
 
-          <div className="pt-2 border-t border-[#24242a] mt-2 flex flex-col gap-1.5">
+          <div className="pt-2 border-t border-zinc-200 mt-2 flex flex-col gap-1.5">
             {/* Mobile Language Switch */}
             <button
               onClick={() => {
                 toggleLanguage();
                 setIsMobileMenuOpen(false);
               }}
-              className="w-full text-start px-3 py-2.5 rounded-lg text-xs font-semibold bg-[#18181c] border border-[#282830] text-zinc-200 hover:text-white flex items-center justify-between cursor-pointer"
+              className="w-full text-start px-3 py-2.5 rounded-lg text-xs font-semibold bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-black flex items-center justify-between cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-[#E51E2A]" />
                 <span>{language === 'ar' ? 'اللغة: العربية' : 'Language: English'}</span>
               </div>
-              <span className="text-[10px] bg-[#24242a] px-2 py-0.5 rounded text-white font-mono">
+              <span className="text-[10px] bg-zinc-200 px-2 py-0.5 rounded text-black font-mono">
                 {language === 'ar' ? 'EN' : 'عربي'}
               </span>
             </button>
@@ -191,13 +189,13 @@ export const Navbar: React.FC = () => {
                 setIsMobileMenuOpen(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="w-full text-start px-3 py-2.5 rounded-lg text-xs font-semibold bg-[#18181c] border border-[#282830] text-zinc-200 hover:text-white flex items-center justify-between cursor-pointer"
+              className="w-full text-start px-3 py-2.5 rounded-lg text-xs font-semibold bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-black flex items-center justify-between cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <History className="w-4 h-4 text-[#E51E2A]" />
                 <span>{language === 'ar' ? 'طلباتك السابقة من هذا الجهاز' : 'Previous Orders (This Device)'}</span>
               </div>
-              <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
+              <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-mono">
                 <Smartphone className="w-3 h-3" />
                 <span>{deviceInfo?.deviceId || 'DEV-AUTO'}</span>
               </div>
@@ -207,5 +205,6 @@ export const Navbar: React.FC = () => {
       )}
     </header>
   );
+
 };
 

@@ -53,33 +53,33 @@ export const MenuView: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Header & Smart Search */}
-      <div className="bg-gradient-to-br from-[#141418] via-[#181820] to-[#121216] border border-[#262630] rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#E51E2A]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="bg-gradient-to-br from-zinc-50 via-white to-zinc-100 border border-zinc-200 rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#E51E2A]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         
         <div className="relative z-10 max-w-3xl mx-auto space-y-6 text-center">
-          <h1 className="text-2xl sm:text-4xl font-black text-white font-heading tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-black text-zinc-900 font-heading tracking-tight">
             {language === 'ar' ? 'ماذا تشتهي اليوم؟' : 'What are you craving?'}
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-300">
+          <p className="text-xs sm:text-sm text-zinc-500">
             {language === 'ar'
               ? 'ابحث بالاسم أو المكونات (مثل: لحم أنجوس، سبايسي، جبنة ذائبة...)'
               : 'Search by name or ingredients (e.g., Angus beef, spicy, melted cheese...)'}
           </p>
 
           <div className="relative max-w-2xl mx-auto">
-            <div className={`flex items-center bg-[#0a0a0c] border ${searchQuery ? 'border-[#E51E2A] shadow-[0_0_15px_rgba(229,30,42,0.15)]' : 'border-[#282832]'} rounded-2xl py-2 px-4 transition-all duration-300`}>
+            <div className={`flex items-center bg-white border ${searchQuery ? 'border-[#E51E2A] shadow-[0_0_15px_rgba(229,30,42,0.15)]' : 'border-zinc-200'} rounded-2xl py-2 px-4 transition-all duration-300`}>
               <Search className={`w-5 h-5 ${searchQuery ? 'text-[#E51E2A]' : 'text-zinc-400'} transition-colors`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={language === 'ar' ? 'ابحث عن وجبتك المفضلة...' : 'Search for your favorite meal...'}
-                className="w-full bg-transparent border-none py-3 px-3 sm:px-4 text-sm sm:text-base text-white placeholder-zinc-500 focus:outline-none"
+                className="w-full bg-transparent border-none py-3 px-3 sm:px-4 text-sm sm:text-base text-zinc-900 placeholder-zinc-400 focus:outline-none"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="p-1 hover:bg-[#18181c] rounded-full text-zinc-400 hover:text-white transition-colors"
+                  className="p-1 hover:bg-zinc-100 rounded-full text-zinc-400 hover:text-zinc-600 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -110,7 +110,7 @@ export const MenuView: React.FC = () => {
               className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer shadow-sm ${
                 activeMenuCategory === 'all'
                   ? 'bg-[#E51E2A] text-white border border-[#E51E2A]'
-                  : 'bg-[#121215] text-zinc-300 hover:text-white hover:bg-[#18181c] border border-[#24242a]'
+                  : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200 border border-zinc-200'
               }`}
             >
               {t('allCategories')} ({products.length})
@@ -130,13 +130,13 @@ export const MenuView: React.FC = () => {
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer flex items-center gap-2 shadow-sm ${
                       isSelected
                         ? 'bg-[#E51E2A] text-white border border-[#E51E2A]'
-                        : 'bg-[#121215] text-zinc-300 hover:text-white hover:bg-[#18181c] border border-[#24242a]'
+                        : 'bg-zinc-100 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200 border border-zinc-200'
                     }`}
                   >
                     <span>{catName}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded ${
-                        isSelected ? 'bg-black/30 text-white' : 'bg-[#202026] text-zinc-400'
+                        isSelected ? 'bg-black/20 text-white' : 'bg-zinc-200 text-zinc-600'
                       }`}
                     >
                       {count}
@@ -147,18 +147,18 @@ export const MenuView: React.FC = () => {
           </div>
 
           {/* Sort Dropdown */}
-          <div className="flex items-center gap-2 bg-[#121215] border border-[#24242a] rounded-xl px-4 py-2.5 shrink-0 shadow-sm">
-            <SlidersHorizontal className="w-4 h-4 text-zinc-400" />
-            <span className="text-xs font-semibold text-zinc-400">{t('sortBy')}:</span>
+          <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-xl px-4 py-2.5 shrink-0 shadow-sm">
+            <SlidersHorizontal className="w-4 h-4 text-zinc-500" />
+            <span className="text-xs font-semibold text-zinc-500">{t('sortBy')}:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-bold text-zinc-900 focus:outline-none cursor-pointer"
             >
-              <option value="default" className="bg-[#121215] text-white">{t('sortDefault')}</option>
-              <option value="popular" className="bg-[#121215] text-white">{t('sortPopular')}</option>
-              <option value="price_low" className="bg-[#121215] text-white">{t('sortPriceLow')}</option>
-              <option value="price_high" className="bg-[#121215] text-white">{t('sortPriceHigh')}</option>
+              <option value="default">{t('sortDefault')}</option>
+              <option value="popular">{t('sortPopular')}</option>
+              <option value="price_low">{t('sortPriceLow')}</option>
+              <option value="price_high">{t('sortPriceHigh')}</option>
             </select>
           </div>
         </div>
@@ -166,13 +166,13 @@ export const MenuView: React.FC = () => {
 
       {/* Product Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-[#121215] border border-[#24242a] rounded-xl p-10 text-center space-y-3 max-w-md mx-auto my-8">
-          <div className="w-12 h-12 rounded-lg bg-[#1a1a20] flex items-center justify-center mx-auto text-zinc-500">
+        <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center space-y-3 max-w-md mx-auto my-8">
+          <div className="w-12 h-12 rounded-lg bg-zinc-100 flex items-center justify-center mx-auto text-zinc-400">
             <Search className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">{t('noProductsFound')}</h3>
-            <p className="text-xs text-zinc-400 mt-1">
+            <h3 className="text-sm font-bold text-zinc-900">{t('noProductsFound')}</h3>
+            <p className="text-xs text-zinc-500 mt-1">
               {language === 'ar' ? 'جرب البحث بكلمات أخرى أو تصفح كل الأقسام' : 'Try another search term or reset filters'}
             </p>
           </div>
