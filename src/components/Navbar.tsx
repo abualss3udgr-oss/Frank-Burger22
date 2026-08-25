@@ -47,13 +47,11 @@ export const Navbar: React.FC = () => {
             }}
             className="flex items-center gap-2.5 text-start cursor-pointer group"
           >
-            <div className="w-8 h-8 bg-[#E51E2A] rounded-md flex items-center justify-center font-heading font-black text-white text-base tracking-tighter shadow-sm group-hover:scale-105 transition-transform">
-              FB
-            </div>
-            <div className="flex items-center gap-1 font-heading font-black text-lg sm:text-xl tracking-tight">
-              <span className="text-white">FRANK</span>
-              <span className="text-[#E51E2A]">BURGER</span>
-            </div>
+            <img 
+              src="https://drive.google.com/uc?export=view&id=139svUvvC7jEx9uVOrC7tO3XM7el5hnwT" 
+              alt="Frank Burger" 
+              className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
+            />
           </button>
 
           {/* Desktop Navigation Links */}

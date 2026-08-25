@@ -29,17 +29,11 @@ export const Footer: React.FC = () => {
               }}
               className="flex items-center gap-2 cursor-pointer group"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E51E2A] to-[#800A11] flex items-center justify-center text-white shadow-lg shadow-[#E51E2A]/20">
-                <Flame className="w-6 h-6 fill-white" />
-              </div>
-              <div>
-                <span className="font-heading text-xl font-black tracking-wider text-white">
-                  FRANK<span className="text-[#E51E2A]">.</span>BURGER
-                </span>
-                <span className="block text-[9px] font-bold text-zinc-400 tracking-widest uppercase">
-                  {language === 'ar' ? 'أقوى برجر مشوي' : 'Gourmet Smash Burgers'}
-                </span>
-              </div>
+              <img 
+                src="https://drive.google.com/uc?export=view&id=139svUvvC7jEx9uVOrC7tO3XM7el5hnwT" 
+                alt="Frank Burger Logo" 
+                className="h-14 w-auto object-contain transition-transform group-hover:scale-105"
+              />
             </div>
 
             <p className="text-xs text-zinc-400 leading-relaxed">
