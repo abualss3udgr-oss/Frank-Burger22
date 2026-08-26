@@ -27,7 +27,7 @@ export const HomeView: React.FC = () => {
   const [showIntro, setShowIntro] = React.useState(() => {
     if (typeof window !== 'undefined') {
       if ((window as any).__hasShownFrankIntro || globalHasShownIntro) return false;
-      const hasShown = sessionStorage.getItem('frank_intro_shown');
+      const hasShown = localStorage.getItem('frank_intro_shown');
       if (hasShown) {
         globalHasShownIntro = true;
         (window as any).__hasShownFrankIntro = true;
@@ -42,7 +42,7 @@ export const HomeView: React.FC = () => {
       globalHasShownIntro = true;
       if (typeof window !== 'undefined') {
         (window as any).__hasShownFrankIntro = true;
-        sessionStorage.setItem('frank_intro_shown', 'true');
+        localStorage.setItem('frank_intro_shown', 'true');
       }
       const timer = setTimeout(() => setShowIntro(false), 1500);
       return () => clearTimeout(timer);
