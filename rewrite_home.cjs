@@ -1,4 +1,6 @@
-import React from 'react';
+const fs = require('fs');
+
+const content = `import React from 'react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
 import {
@@ -308,7 +310,7 @@ export const HomeView: React.FC = () => {
                         <button
                           onClick={() => {
                             const promoProd = products.find((p) => p.id === offer.includedProductIds?.[0]) || products[0];
-                            addToCart(promoProd, undefined, [], 1, `عرض: ${oTitle}`);
+                            addToCart(promoProd, undefined, [], 1, \`عرض: \${oTitle}\`);
                           }}
                           className="w-10 h-10 rounded-full bg-white text-zinc-900 hover:bg-[#E51E2A] hover:text-white flex items-center justify-center transition-colors shadow-sm"
                         >
@@ -391,3 +393,5 @@ export const HomeView: React.FC = () => {
     </div>
   );
 };
+`
+fs.writeFileSync('src/views/HomeView.tsx', content, 'utf8');

@@ -21,9 +21,9 @@ export const translations = {
     searchPlaceholder: 'ابحث عن برجر، بيتزا، وجبات، كريب، مكرونة، صوص...',
     
     // Hero
-    heroTitlePart1: 'البرجر اللي',
-    heroTitlePart2: 'بتشتهيه.',
-    heroDesc: 'مكونات طازجة، برجر مليان عصارة، ونكهات قوية — متحضرة على ذوقك.',
+    heroTitlePart1: 'أكلك المفضل..',
+    heroTitlePart2: 'بطريقتنا',
+    heroDesc: 'من الوجبات السريعة للمشويات والسندوتشات والمقبلات، عندنا اختيارات تناسب كل مزاج وكل وقت.',
     heroOrderNow: 'اطلب دلوقتي 🔥',
     heroViewMenu: 'استكشف المنيو الكامل',
     heroBadge1: 'مكونات 100% طازجة',
@@ -252,9 +252,9 @@ export const translations = {
     searchPlaceholder: 'Search burgers, chicken, fries, dips...',
 
     // Hero
-    heroTitlePart1: 'The Burger',
-    heroTitlePart2: 'You Crave.',
-    heroDesc: 'Fresh ingredients, juicy burgers, and bold flavors — made your way.',
+    heroTitlePart1: 'Your Favorite Food..',
+    heroTitlePart2: 'Our Way.',
+    heroDesc: 'From fast food to grills, sandwiches, and appetizers, we have choices to suit every mood and every time.',
     heroOrderNow: 'Order Now 🔥',
     heroViewMenu: 'Explore Full Menu',
     heroBadge1: '100% Fresh Angus Beef',

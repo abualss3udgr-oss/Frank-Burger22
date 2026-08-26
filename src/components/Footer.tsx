@@ -133,34 +133,17 @@ export const Footer: React.FC = () => {
                   {language === 'ar' ? 'عنا' : 'About Us'}
                 </button>
               </li>
-              <li>
-                <button
-                  onClick={() => {
-                    setCurrentView('profile');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="hover:text-[#E51E2A] text-zinc-600 transition-colors cursor-pointer font-semibold"
-                >
-                  {language === 'ar' ? 'طلباتك السابقة (معرّف الجهاز)' : 'Previous Orders (Device ID)'}
-                </button>
-              </li>
             </ul>
           </div>
 
-          {/* Col 3: Restaurant Headquarters Location */}
+          {/* Col 3: Restaurant Location */}
           <div className="space-y-3">
             <h4 className="text-black font-bold text-sm font-heading uppercase tracking-wider">
-              {language === 'ar' ? 'مقر وعنوان المطعم' : 'Restaurant Location'}
+              {language === 'ar' ? 'عنوان المطعم' : 'Restaurant Location'}
             </h4>
             <div className="space-y-1.5 text-xs text-start">
-              <span className="font-bold text-zinc-800 block">
-                {language === 'ar' ? 'المقر الرئيسي (أسيوط)' : 'Main Branch (Assiut)'}
-              </span>
-              <span className="text-[11px] text-zinc-500 block leading-relaxed">
-                {language === 'ar' ? settings.addressAr : settings.addressEn}
-              </span>
-              <span className="text-[10px] text-emerald-700 font-mono block pt-1">
-                {language === 'ar' ? settings.openingHoursAr : settings.openingHoursEn}
+              <span className="text-xs text-zinc-700 block leading-relaxed font-medium">
+                {language === 'ar' ? 'أسيوط - فريال، أمام مستشفى العقاد' : 'Asyut - Ferial, in front of El-Akkad Hospital'}
               </span>
             </div>
           </div>
@@ -204,12 +187,20 @@ export const Footer: React.FC = () => {
 
       {/* Copyright Bar */}
       <div className="border-t border-zinc-200 bg-white py-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center gap-2 text-xs text-zinc-500 text-center">
           <div>
             © {new Date().getFullYear()} FRANK BURGER. {language === 'ar' ? 'جميع الحقوق محفوظة' : 'All rights reserved'}.
           </div>
-          <div className="flex items-center gap-4">
-            {/* Admin portal accessible via /#admin */}
+          <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+            <span>{language === 'ar' ? 'تطوير بواسطة' : 'Developed by'}</span>
+            <a
+              href="https://bytera.net"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-zinc-700 hover:text-[#E51E2A] transition-colors"
+            >
+              Bytera
+            </a>
           </div>
         </div>
       </div>

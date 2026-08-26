@@ -182,24 +182,6 @@ export const Navbar: React.FC = () => {
                 {language === 'ar' ? 'EN' : 'عربي'}
               </span>
             </button>
-
-            <button
-              onClick={() => {
-                setCurrentView('profile');
-                setIsMobileMenuOpen(false);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="w-full text-start px-3 py-2.5 rounded-lg text-xs font-semibold bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-black flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <History className="w-4 h-4 text-[#E51E2A]" />
-                <span>{language === 'ar' ? 'طلباتك السابقة من هذا الجهاز' : 'Previous Orders (This Device)'}</span>
-              </div>
-              <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-mono">
-                <Smartphone className="w-3 h-3" />
-                <span>{deviceInfo?.deviceId || 'DEV-AUTO'}</span>
-              </div>
-            </button>
           </div>
         </div>
       )}

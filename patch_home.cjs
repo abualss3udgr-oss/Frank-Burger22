@@ -1,4 +1,6 @@
-import React from 'react';
+const fs = require('fs');
+
+const content = `import React from 'react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
 import {
@@ -19,7 +21,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Testimonials } from '../components/Testimonials';
-const heroBurgerImg = "/hero-burger.jpg";
+import heroBurgerImg from '../assets/images/double_cheeseburger_sauce_1787749894703.jpg';
 
 export const HomeView: React.FC = () => {
   const [showIntro, setShowIntro] = React.useState(true);
@@ -43,7 +45,7 @@ export const HomeView: React.FC = () => {
   const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 4);
 
   return (
-    <div className="pb-20 bg-white">
+    <div className="space-y-16 sm:space-y-24 pb-20 bg-white">
       <AnimatePresence>
         {showIntro && (
           <motion.div
@@ -63,7 +65,6 @@ export const HomeView: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="space-y-16 sm:space-y-24">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
         {/* 1. IMMERSIVE HERO SECTION - LIGHT THEME */}
         <section className="relative overflow-hidden bg-gradient-to-br from-white via-red-50/30 to-zinc-50 py-24 sm:py-32 xl:py-40">
@@ -88,7 +89,7 @@ export const HomeView: React.FC = () => {
                   </span>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-zinc-900 leading-[1.05] font-heading tracking-tight">
+                <h1 className="text-5xl sm:text-7xl xl:text-8xl font-black text-zinc-900 leading-[1.05] font-heading tracking-tight">
                   {t('heroTitlePart1')} <br/>
                   <span className="text-[#E51E2A] inline-block mt-2 relative">
                     {t('heroTitlePart2')}
@@ -308,7 +309,7 @@ export const HomeView: React.FC = () => {
                         <button
                           onClick={() => {
                             const promoProd = products.find((p) => p.id === offer.includedProductIds?.[0]) || products[0];
-                            addToCart(promoProd, undefined, [], 1, `عرض: ${oTitle}`);
+                            addToCart(promoProd, undefined, [], 1, \`عرض: \${oTitle}\`);
                           }}
                           className="w-10 h-10 rounded-full bg-white text-zinc-900 hover:bg-[#E51E2A] hover:text-white flex items-center justify-center transition-colors shadow-sm"
                         >
@@ -387,7 +388,8 @@ export const HomeView: React.FC = () => {
           </div>
         </div>
       </section>
-      </div>
     </div>
   );
 };
+`
+fs.writeFileSync('src/views/HomeView.tsx', content, 'utf8');
