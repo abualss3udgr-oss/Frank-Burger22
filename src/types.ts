@@ -151,6 +151,7 @@ export interface Order {
   total: number;
   couponCode?: string;
   orderDate: string; // ISO
+  createdAt?: any; // Firestore Server Timestamp
   estimatedDeliveryTime: string;
   scheduledTime?: string; // e.g. "Today, 09:30 PM"
   statusHistory: {

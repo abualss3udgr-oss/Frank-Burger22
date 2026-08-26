@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useRef } from 'react';
 import {
   doc,
   setDoc,
@@ -8,6 +8,8 @@ import {
   onSnapshot,
   arrayUnion,
   arrayRemove,
+  serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { trackAddToCart, trackPurchase } from '../lib/pixel';
@@ -431,8 +433,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { ...INITIAL_SETTINGS, ...(loaded || {}) };
   });
   const [orders, setOrders] = useState<Order[]>(() => loadFromStorage('orders_v2', INITIAL_ORDERS));
+  const notifiedOrderIds = useRef<Set<string>>(new Set());
 
-  // Sync orders in real-time across ALL devices, tabs, and clients via Firestore and BroadcastChannel
+  // Sync orders in real-time across ALL devices, tabs, and clients via Firestore
   useEffect(() => {
     // 1. Setup Firestore real-time listener for multi-device & cloud synchronization
     const ordersCollectionRef = collection(db, 'orders');
@@ -444,70 +447,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const firestoreOrders: Order[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as Order;
-          if (data && data.id) {
-            firestoreOrders.push(data);
+          // Merge Firestore document ID into the order object
+          const order = { ...data, id: docSnap.id };
+          if (order.id) {
+            firestoreOrders.push(order);
           }
         });
 
-        // Sort: Newest first
-        firestoreOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+        // Sort: Newest first (using Server Timestamp if available, fallback to ISO date)
+        firestoreOrders.sort((a, b) => {
+          const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toDate().getTime() : new Date(a.orderDate).getTime();
+          const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toDate().getTime() : new Date(b.orderDate).getTime();
+          return timeB - timeA;
+        });
         
-        // Update state even if empty to ensure sync (clearing mock data if DB is empty)
+        // Update state and persistent storage
         setOrders(firestoreOrders);
         saveToStorage('orders_v2', firestoreOrders);
 
-        // Detect actually NEW orders (not initial load)
+        // Multi-device notification logic
         if (!isInitialLoad) {
           snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
-              const addedOrder = change.doc.data() as Order;
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: addedOrder }));
+              const addedOrder = { ...change.doc.data() as Order, id: change.doc.id };
+              // Only notify if we haven't processed this ID yet in this session
+              if (addedOrder && addedOrder.id && !notifiedOrderIds.current.has(addedOrder.id)) {
+                notifiedOrderIds.current.add(addedOrder.id);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: addedOrder }));
+                }
               }
             }
           });
+        } else {
+          // On startup, mark all existing orders as already "notified" to prevent spamming old alerts
+          snapshot.forEach((doc) => {
+            notifiedOrderIds.current.add(doc.id);
+          });
+          isInitialLoad = false;
         }
-        
-        isInitialLoad = false;
       },
       (error) => {
         handleFirestoreError(error, OperationType.GET, 'orders');
       }
     );
 
-    // 2. BroadcastChannel for instant zero-latency sync between tabs on same device
-    let bc: BroadcastChannel | null = null;
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-      bc = new BroadcastChannel('frank_burger_orders_channel');
-      bc.onmessage = (event) => {
-        if (event.data?.type === 'NEW_ORDER' && event.data?.order) {
-          const newOrd = event.data.order as Order;
-          setOrders((prev) => {
-            if (prev.some((o) => o.id === newOrd.id)) return prev;
-            return [newOrd, ...prev];
-          });
-          window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: newOrd }));
-        } else if (event.data?.type === 'UPDATE_STATUS') {
-          const { orderId, status, note } = event.data;
-          setOrders((prev) =>
-            prev.map((ord) =>
-              ord.id === orderId
-                ? {
-                    ...ord,
-                    status,
-                    statusHistory: [
-                      ...ord.statusHistory,
-                      { status, timestamp: new Date().toISOString(), note: note || `Status: ${status}` },
-                    ],
-                  }
-                : ord
-            )
-          );
-        }
-      };
-    }
-
-    // 3. Fallback StorageEvent
+    // 2. Storage Event fallback for same-device cross-tab synchronization
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'orders_v2' && e.newValue) {
         try {
@@ -516,7 +501,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setOrders(parsed);
           }
         } catch {
-          // ignore
+          // silent ignore
         }
       }
     };
@@ -524,7 +509,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return () => {
       unsubscribeFirestore();
-      if (bc) bc.close();
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
@@ -1128,9 +1112,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       deviceId: deviceInfo.deviceId,
       deviceMac: deviceInfo.macAddress,
       deviceIp: deviceInfo.ipAddress,
-      shiftId: orderData.shiftId || activeShift?.id,
-      cashierName: orderData.cashierName || (activeShift ? activeShift.cashierName : undefined),
+      shiftId: orderData.shiftId || activeShift?.id || null,
+      cashierName: orderData.cashierName || (activeShift ? activeShift.cashierName : null),
       orderDate: now,
+      createdAt: serverTimestamp(),
       statusHistory: [
         {
           status: 'pending',
@@ -1140,8 +1125,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ],
     };
 
+    // Remove any remaining undefined fields (Firestore doesn't allow undefined)
+    const cleanOrder = JSON.parse(JSON.stringify(newOrder, (key, value) => (value === undefined ? null : value)));
+    // Restore Firestore-specific field types that were lost during JSON serialization
+    cleanOrder.createdAt = newOrder.createdAt;
+
     saveOrderToMyDevice(newId);
+    // Locally add it immediately for zero-latency UI on sender
     setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== newId)]);
+    notifiedOrderIds.current.add(newId); // Prevent duplicate notification on sender
+    
     clearCart();
     setActiveTrackingOrderId(newId);
     setOrderConfirmationOrder(newOrder);
@@ -1151,23 +1144,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Trigger Meta Pixel Purchase event (1 Purchase event with order value in EGP)
     trackPurchase(newOrder);
 
-    // 1. Instantly broadcast locally
+    // 1. Dispatched locally for the same page
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: newOrder }));
-      if ('BroadcastChannel' in window) {
-        try {
-          const bc = new BroadcastChannel('frank_burger_orders_channel');
-          bc.postMessage({ type: 'NEW_ORDER', order: newOrder });
-          bc.close();
-        } catch {
-          // ignore
-        }
-      }
     }
 
     // 2. Persist to Firestore cloud database in real-time
     try {
-      await setDoc(doc(db, 'orders', newId), newOrder);
+      await setDoc(doc(db, 'orders', newId), cleanOrder);
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `orders/${newId}`);
     }
@@ -1220,7 +1204,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Sync to Firestore
     try {
       if (updatedOrderObj) {
-        setDoc(doc(db, 'orders', orderId), updatedOrderObj, { merge: true }).catch((err) => {
+        // Clean undefined values
+        const cleanUpdate = JSON.parse(JSON.stringify(updatedOrderObj, (key, value) => (value === undefined ? null : value)));
+        if (updatedOrderObj.createdAt) {
+          cleanUpdate.createdAt = updatedOrderObj.createdAt;
+        }
+
+        setDoc(doc(db, 'orders', orderId), cleanUpdate, { merge: true }).catch((err) => {
           handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
         });
       }

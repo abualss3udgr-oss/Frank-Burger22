@@ -28,7 +28,8 @@ service cloud.firestore {
       return data.id is string && data.id.size() <= 100 &&
              data.status is string && data.status.size() <= 40 &&
              data.total is number && data.total >= 0 &&
-             data.orderDate is string && data.orderDate.size() <= 60;
+             data.orderDate is string && data.orderDate.size() <= 60 &&
+             (data.createdAt == null || data.createdAt is timestamp);
     }
 
     function isValidShift(data) {
@@ -56,8 +57,10 @@ service cloud.firestore {
     // 2. Orders Collection
     match /orders/{orderId} {
       allow read: if true;
-      allow create: if isValidId(orderId) && incoming().id == orderId && isValidOrder(incoming());
-      allow update: if isValidId(orderId) && isValidOrder(incoming());
+      allow create: if isValidId(orderId) && incoming().id == orderId && isValidOrder(incoming()) && 
+                    (incoming().createdAt == null || incoming().createdAt == request.time);
+      allow update: if isValidId(orderId) && isValidOrder(incoming()) && 
+                    (incoming().createdAt == existing().createdAt);
       allow delete: if isValidId(orderId);
     }
 

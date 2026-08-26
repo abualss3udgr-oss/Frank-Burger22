@@ -105,6 +105,7 @@ const AdminDashboard: React.FC = () => {
     closeShift,
     addShiftExpense,
     language,
+    addToast,
   } = useApp();
 
   const isRestricted = adminUser?.role === 'cashier';
@@ -214,7 +215,7 @@ const AdminDashboard: React.FC = () => {
         name: posCustomerName || 'زبون صالة',
         phone: posCustomerPhone || '01000000000',
         addressStreet: posOrderType === 'pickup' ? `طاولة رقم ${posTableNumber} - صالة ومطعم` : 'توصيل سريع - فرع المطعم',
-        pickupBranchId: branches[0]?.id,
+        pickupBranchId: branches[0]?.id || null,
       },
       items: posCart,
       orderType: posOrderType,
@@ -612,15 +613,23 @@ const AdminDashboard: React.FC = () => {
             className="h-9 sm:h-12 md:h-16 w-auto object-contain shrink-0"
           />
           
-          {/* Real-time Sync Status Indicator */}
-          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm ${
-            syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-            syncStatus === 'connecting' ? 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse' : 
-            'bg-red-50 text-red-600 border-red-100'
-          }`}>
+          {/* Real-time Sync Status Indicator & Audio Enabler */}
+          <button 
+            onClick={() => {
+              soundManager.unlockAudio();
+              setSoundEnabled(true);
+              addToast(language === 'ar' ? 'تم تفعيل التنبيهات الصوتية بنجاح' : 'Audio alerts activated', 'success');
+            }}
+            title={language === 'ar' ? 'اضغط لتفعيل الصوت' : 'Click to enable sound'}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 hover:brightness-95 ${
+              syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 cursor-pointer' : 
+              syncStatus === 'connecting' ? 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse cursor-wait' : 
+              'bg-red-50 text-red-600 border-red-100 cursor-not-allowed'
+            }`}
+          >
             <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'connecting' ? 'bg-amber-500' : 'bg-red-500'}`} />
-            <span>{syncStatus === 'synced' ? (language === 'ar' ? 'متصل مباشر' : 'LIVE SYNC') : (language === 'ar' ? 'جاري الاتصال' : 'CONNECTING')}</span>
-          </div>
+            <span>{syncStatus === 'synced' ? (language === 'ar' ? 'متصل مباشر (تفعيل الصوت)' : 'LIVE SYNC (ENABLE SOUND)') : (language === 'ar' ? 'جاري الاتصال' : 'CONNECTING')}</span>
+          </button>
           <div>
             {!isRestricted && (
               <>

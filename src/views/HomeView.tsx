@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Testimonials } from '../components/Testimonials';
-const heroBurgerImg = "/hero-burger.jpg";
+const heroBurgerImg = "https://res.cloudinary.com/fwxyu7hh/image/upload/v1787756297/Imgess.jpg";
 
 let globalHasShownIntro = false;
 
