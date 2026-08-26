@@ -160,6 +160,51 @@ export interface Order {
   }[];
   adminNotes?: string;
   branchId?: string;
+  shiftId?: string;
+  cashierName?: string;
+}
+
+export interface ShiftExpense {
+  id: string;
+  amount: number;
+  reason: string;
+  time: string; // ISO
+  createdBy: string;
+}
+
+export interface CashierShift {
+  id: string; // e.g. SHIFT-1001
+  cashierId: string;
+  cashierName: string;
+  branchId?: string;
+  branchNameAr?: string;
+  status: 'active' | 'closed';
+  startTime: string; // ISO
+  endTime?: string; // ISO
+
+  // Handover chain (استلام وتسليم)
+  handedOverFromCashierName?: string; // استلم من الكاشير
+  handedOverToCashierName?: string; // سلّم للكاشير
+
+  // Financials & Balances
+  startingCash: number; // العهدة النقدية / الرصيد الافتتاحي
+  cashSales: number; // إجمالي مبيعات الكاش
+  instapaySales: number; // إجمالي مبيعات إنستاباي
+  otherSales: number; // إجمالي مبيعات أخرى
+  totalSales: number; // إجمالي المبيعات
+
+  // Orders statistics
+  ordersCount: number; // عدد الطلبات المنجزة
+  orderIds: string[]; // أرقام الطلبات
+
+  // Cash Drawer Auditing (تسوية ومصروفات الدرج)
+  expenses: ShiftExpense[]; // المصروفات والسحوبات
+  totalExpenses: number; // إجمالي المصروفات
+  expectedCashInDrawer: number; // المبلغ المتوقع بالدرج = startingCash + cashSales - totalExpenses
+  actualCashInDrawer?: number; // المبلغ الفعلي المعدود بالدرج
+  difference?: number; // العجز (-) أو الزيادة (+) = actualCashInDrawer - expectedCashInDrawer
+
+  notes?: string; // ملاحظات الإغلاق أو التسليم
 }
 
 export interface Coupon {

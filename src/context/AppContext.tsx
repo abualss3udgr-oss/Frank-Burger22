@@ -30,6 +30,8 @@ import {
   CustomerInfo,
   ProductSize,
   CartItemAddon,
+  CashierShift,
+  ShiftExpense,
 } from '../types';
 import {
   INITIAL_CATEGORIES,
@@ -237,6 +239,31 @@ interface AppContextType {
 
   // Product Ratings
   updateProductRating: (productId: string, rating: number) => void;
+
+  // Shifts & Cashier Handover
+  shifts: CashierShift[];
+  activeShift: CashierShift | null;
+  openShift: (params: {
+    startingCash: number;
+    cashierName: string;
+    cashierId?: string;
+    handedOverFromCashierName?: string;
+    branchId?: string;
+    branchNameAr?: string;
+    notes?: string;
+  }) => CashierShift;
+  closeShift: (
+    shiftId: string,
+    params: {
+      actualCashInDrawer: number;
+      handedOverToCashierName?: string;
+      notes?: string;
+    }
+  ) => CashierShift | null;
+  addShiftExpense: (
+    shiftId: string,
+    expense: { amount: number; reason: string; createdBy?: string }
+  ) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -450,6 +477,327 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
+
+  // Shifts state & real-time synchronization
+  const [shifts, setShifts] = useState<CashierShift[]>(() => loadFromStorage('shifts_v2', []));
+
+  useEffect(() => {
+    // 1. Firestore real-time listener for shifts
+    const shiftsCollectionRef = collection(db, 'shifts');
+    const unsubscribeShifts = onSnapshot(
+      shiftsCollectionRef,
+      (snapshot) => {
+        const firestoreShifts: CashierShift[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as CashierShift;
+          if (data && data.id) {
+            firestoreShifts.push(data);
+          }
+        });
+
+        if (firestoreShifts.length > 0) {
+          firestoreShifts.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+          setShifts(firestoreShifts);
+          saveToStorage('shifts_v2', firestoreShifts);
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'shifts');
+      }
+    );
+
+    // 2. BroadcastChannel for instant multi-tab sync
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      bc = new BroadcastChannel('frank_burger_shifts_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'SHIFT_OPENED' && event.data?.shift) {
+          const newShift = event.data.shift as CashierShift;
+          setShifts((prev) => [newShift, ...prev.filter((s) => s.id !== newShift.id)]);
+        } else if (event.data?.type === 'SHIFT_CLOSED' && event.data?.shift) {
+          const closed = event.data.shift as CashierShift;
+          setShifts((prev) => prev.map((s) => (s.id === closed.id ? closed : s)));
+        } else if (event.data?.type === 'SHIFT_UPDATED' && event.data?.shift) {
+          const upd = event.data.shift as CashierShift;
+          setShifts((prev) => prev.map((s) => (s.id === upd.id ? upd : s)));
+        }
+      };
+    }
+
+    // 3. Fallback StorageEvent
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'shifts_v2' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setShifts(parsed);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      unsubscribeShifts();
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // Active shift live computation
+  const activeShift = useMemo(() => {
+    const active = shifts.find((s) => s.status === 'active');
+    if (!active) return null;
+
+    const shiftOrders = orders.filter(
+      (o) =>
+        o.status !== 'cancelled' &&
+        (o.shiftId === active.id ||
+          (!o.shiftId && new Date(o.orderDate).getTime() >= new Date(active.startTime).getTime()))
+    );
+
+    const cashSales = shiftOrders
+      .filter((o) => o.paymentMethod === 'cash_on_delivery')
+      .reduce((sum, o) => sum + (o.total || 0), 0);
+
+    const instapaySales = shiftOrders
+      .filter((o) => o.paymentMethod === 'instapay')
+      .reduce((sum, o) => sum + (o.total || 0), 0);
+
+    const totalSales = shiftOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const otherSales = totalSales - cashSales - instapaySales;
+    const ordersCount = shiftOrders.length;
+    const orderIds = shiftOrders.map((o) => o.id);
+    const totalExpenses = (active.expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+    const expectedCashInDrawer = (active.startingCash || 0) + cashSales - totalExpenses;
+
+    return {
+      ...active,
+      cashSales,
+      instapaySales,
+      otherSales,
+      totalSales,
+      ordersCount,
+      orderIds,
+      totalExpenses,
+      expectedCashInDrawer,
+    };
+  }, [shifts, orders]);
+
+  // Open a new shift
+  const openShift = (params: {
+    startingCash: number;
+    cashierName: string;
+    cashierId?: string;
+    handedOverFromCashierName?: string;
+    branchId?: string;
+    branchNameAr?: string;
+    notes?: string;
+  }): CashierShift => {
+    const newShiftId = `SHIFT-${Date.now().toString().slice(-5)}`;
+    const previousClosedShift = shifts.find((s) => s.status === 'closed');
+    const autoHandedOverFrom = params.handedOverFromCashierName || previousClosedShift?.cashierName || 'كاشير الوردية السابقة';
+
+    const newShift: CashierShift = {
+      id: newShiftId,
+      cashierId: params.cashierId || adminUser?.id || 'cashier-1',
+      cashierName: params.cashierName || adminUser?.name || 'كاشير الصالة',
+      branchId: params.branchId || branches[0]?.id || 'branch-1',
+      branchNameAr: params.branchNameAr || branches[0]?.nameAr || 'الفرع الرئيسي',
+      status: 'active',
+      startTime: new Date().toISOString(),
+      handedOverFromCashierName: autoHandedOverFrom,
+      startingCash: Number(params.startingCash) || 0,
+      cashSales: 0,
+      instapaySales: 0,
+      otherSales: 0,
+      totalSales: 0,
+      ordersCount: 0,
+      orderIds: [],
+      expenses: [],
+      totalExpenses: 0,
+      expectedCashInDrawer: Number(params.startingCash) || 0,
+      notes: params.notes || '',
+    };
+
+    setShifts((prev) => [newShift, ...prev.filter((s) => s.id !== newShiftId)]);
+    saveToStorage('shifts_v2', [newShift, ...shifts.filter((s) => s.id !== newShiftId)]);
+
+    // Firestore sync
+    try {
+      setDoc(doc(db, 'shifts', newShiftId), newShift).catch((err) => {
+        handleFirestoreError(err, OperationType.CREATE, `shifts/${newShiftId}`);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, `shifts/${newShiftId}`);
+    }
+
+    // Broadcast
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('frank_burger_shifts_channel');
+        bc.postMessage({ type: 'SHIFT_OPENED', shift: newShift });
+        bc.close();
+      } catch {}
+    }
+
+    addToast(
+      language === 'ar'
+        ? `تم فتح وردية جديدة بنجاح للكاشير: ${newShift.cashierName} (عهدة ${newShift.startingCash} ج.م)`
+        : `New shift opened for: ${newShift.cashierName}`,
+      'success'
+    );
+    return newShift;
+  };
+
+  // Close / Handover Shift
+  const closeShift = (
+    shiftId: string,
+    params: {
+      actualCashInDrawer: number;
+      handedOverToCashierName?: string;
+      notes?: string;
+    }
+  ): CashierShift | null => {
+    const targetShift = shifts.find((s) => s.id === shiftId);
+    if (!targetShift) return null;
+
+    const shiftOrders = orders.filter(
+      (o) =>
+        o.status !== 'cancelled' &&
+        (o.shiftId === shiftId ||
+          (!o.shiftId && new Date(o.orderDate).getTime() >= new Date(targetShift.startTime).getTime()))
+    );
+
+    const cashSales = shiftOrders
+      .filter((o) => o.paymentMethod === 'cash_on_delivery')
+      .reduce((sum, o) => sum + (o.total || 0), 0);
+
+    const instapaySales = shiftOrders
+      .filter((o) => o.paymentMethod === 'instapay')
+      .reduce((sum, o) => sum + (o.total || 0), 0);
+
+    const totalSales = shiftOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const otherSales = totalSales - cashSales - instapaySales;
+    const ordersCount = shiftOrders.length;
+    const orderIds = shiftOrders.map((o) => o.id);
+
+    const totalExpenses = (targetShift.expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+    const expectedCashInDrawer = (targetShift.startingCash || 0) + cashSales - totalExpenses;
+    const actualCashInDrawer = Number(params.actualCashInDrawer) || 0;
+    const difference = actualCashInDrawer - expectedCashInDrawer;
+
+    const closedShift: CashierShift = {
+      ...targetShift,
+      status: 'closed',
+      endTime: new Date().toISOString(),
+      handedOverToCashierName: params.handedOverToCashierName || '',
+      cashSales,
+      instapaySales,
+      otherSales,
+      totalSales,
+      ordersCount,
+      orderIds,
+      totalExpenses,
+      expectedCashInDrawer,
+      actualCashInDrawer,
+      difference,
+      notes: params.notes || targetShift.notes,
+    };
+
+    setShifts((prev) => prev.map((s) => (s.id === shiftId ? closedShift : s)));
+    saveToStorage(
+      'shifts_v2',
+      shifts.map((s) => (s.id === shiftId ? closedShift : s))
+    );
+
+    // Firestore sync
+    try {
+      setDoc(doc(db, 'shifts', shiftId), closedShift, { merge: true }).catch((err) => {
+        handleFirestoreError(err, OperationType.UPDATE, `shifts/${shiftId}`);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `shifts/${shiftId}`);
+    }
+
+    // Broadcast
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('frank_burger_shifts_channel');
+        bc.postMessage({ type: 'SHIFT_CLOSED', shift: closedShift });
+        bc.close();
+      } catch {}
+    }
+
+    addToast(
+      language === 'ar'
+        ? `تم تقفيل وتسليم الوردية بنجاح (${closedShift.id}) - العجز/الزيادة: ${difference > 0 ? `+${difference}` : difference} ج.م`
+        : `Shift ${closedShift.id} closed and handed over successfully`,
+      'success'
+    );
+
+    return closedShift;
+  };
+
+  // Add Expense / Drawer Payout during shift
+  const addShiftExpense = (
+    shiftId: string,
+    expenseData: { amount: number; reason: string; createdBy?: string }
+  ) => {
+    const newExpense: ShiftExpense = {
+      id: `EXP-${Date.now().toString().slice(-4)}`,
+      amount: Number(expenseData.amount) || 0,
+      reason: expenseData.reason.trim(),
+      time: new Date().toISOString(),
+      createdBy: expenseData.createdBy || adminUser?.name || 'الكاشير',
+    };
+
+    let updatedShift: CashierShift | undefined;
+
+    setShifts((prev) =>
+      prev.map((s) => {
+        if (s.id === shiftId) {
+          const updatedExpenses = [...(s.expenses || []), newExpense];
+          const totalExpenses = updatedExpenses.reduce((sum, e) => sum + e.amount, 0);
+          const expectedCashInDrawer = (s.startingCash || 0) + (s.cashSales || 0) - totalExpenses;
+          const upd: CashierShift = {
+            ...s,
+            expenses: updatedExpenses,
+            totalExpenses,
+            expectedCashInDrawer,
+          };
+          updatedShift = upd;
+          return upd;
+        }
+        return s;
+      })
+    );
+
+    if (updatedShift) {
+      try {
+        setDoc(doc(db, 'shifts', shiftId), updatedShift, { merge: true }).catch((err) => {
+          handleFirestoreError(err, OperationType.UPDATE, `shifts/${shiftId}`);
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `shifts/${shiftId}`);
+      }
+
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        try {
+          const bc = new BroadcastChannel('frank_burger_shifts_channel');
+          bc.postMessage({ type: 'SHIFT_UPDATED', shift: updatedShift });
+          bc.close();
+        } catch {}
+      }
+    }
+
+    addToast(
+      language === 'ar'
+        ? `تم تسجيل المصروف بقيمة ${expenseData.amount} ج.م من الدرج (${expenseData.reason})`
+        : `Expense of ${expenseData.amount} EGP recorded`,
+      'info'
+    );
+  };
 
   // Loyalty points
   const [loyaltyPoints, setLoyaltyPoints] = useState<number>(() => loadFromStorage('loyalty_points', 0));
@@ -711,6 +1059,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       deviceId: deviceInfo.deviceId,
       deviceMac: deviceInfo.macAddress,
       deviceIp: deviceInfo.ipAddress,
+      shiftId: orderData.shiftId || activeShift?.id,
+      cashierName: orderData.cashierName || (activeShift ? activeShift.cashierName : undefined),
       orderDate: now,
       statusHistory: [
         {
@@ -1277,6 +1627,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addLoyaltyPoints,
         redeemLoyaltyPoints,
         updateProductRating,
+        shifts,
+        activeShift,
+        openShift,
+        closeShift,
+        addShiftExpense,
       }}
     >
       {children}

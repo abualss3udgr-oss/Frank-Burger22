@@ -59,6 +59,12 @@ export const ReceiptModal: React.FC = () => {
             <span>Date:</span>
             <span>{new Date(order.orderDate).toLocaleString()}</span>
           </div>
+          {order.cashierName && (
+            <div className="flex justify-between text-zinc-700 font-medium">
+              <span>Cashier:</span>
+              <span className="font-bold">{order.cashierName}</span>
+            </div>
+          )}
           <div className="flex justify-between text-zinc-600">
             <span>Customer:</span>
             <span>{order.customer?.name || (language === 'ar' ? 'عميل' : 'Customer')}</span>

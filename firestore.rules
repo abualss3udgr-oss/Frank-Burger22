@@ -23,6 +23,14 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    // Cashier Shifts Collection: Handover and Shift auditing
+    match /shifts/{shiftId} {
+      allow read: if true;
+      allow create: if isValidId(shiftId) && incoming().id == shiftId;
+      allow update: if isValidId(shiftId);
+      allow delete: if true;
+    }
+
     // User Profiles
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;

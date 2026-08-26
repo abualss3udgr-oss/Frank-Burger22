@@ -29,12 +29,32 @@
         "phone": { "type": "string" }
       },
       "required": ["email"]
+    },
+    "CashierShift": {
+      "title": "CashierShift",
+      "description": "Cashier shift record and handover details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cashierId": { "type": "string" },
+        "cashierName": { "type": "string" },
+        "status": { "type": "string" },
+        "startTime": { "type": "string" },
+        "startingCash": { "type": "number" },
+        "totalSales": { "type": "number" },
+        "ordersCount": { "type": "number" }
+      },
+      "required": ["id", "cashierName", "status", "startTime", "startingCash"]
     }
   },
   "firestore": {
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "All customer and cashier orders"
+    },
+    "/shifts/{shiftId}": {
+      "schema": "CashierShift",
+      "description": "Cashier shifts and handover records"
     },
     "/users/{userId}": {
       "schema": "UserProfile",

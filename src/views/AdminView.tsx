@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Product, Order, OrderStatus, Category, Coupon, Offer, Branch, CartItem, PaymentMethod, ProductSize, CartItemAddon } from '../types';
 import { AdminLogin } from '../components/AdminLogin';
 import { PeakHoursChart } from '../components/PeakHoursChart';
+import { ShiftManagementView } from '../components/ShiftManagementView';
 import { soundManager } from '../utils/audio';
 import {
   LayoutDashboard,
@@ -45,6 +46,11 @@ import {
   ExternalLink,
   ChevronLeft,
   Bell,
+  ArrowRightLeft,
+  Unlock,
+  Lock,
+  Banknote,
+  Receipt,
 } from 'lucide-react';
 
 // Sound alert helper using SoundEffects with auto-unlocked AudioContext & rich multi-part bell chime
@@ -84,12 +90,17 @@ const AdminDashboard: React.FC = () => {
     updateBranch,
     setActiveReceiptOrder,
     addonGroups,
+    shifts,
+    activeShift,
+    openShift,
+    closeShift,
+    addShiftExpense,
   } = useApp();
 
   const isCashier = adminUser?.role === 'cashier';
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orders' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings'
+    'overview' | 'orders' | 'shifts' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings'
   >(() => (isCashier ? 'orders' : 'overview'));
 
   // Search & Filter States
@@ -642,6 +653,30 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
 
+          {/* Active Shift Status Pill */}
+          <button
+            onClick={() => setActiveTab('shifts')}
+            title="إدارة الوردية وتسليم الكاشير"
+            className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm border ${
+              activeShift
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+            }`}
+          >
+            {activeShift ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                <Unlock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="text-[11px]">وردية: {activeShift.cashierName}</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="text-[11px]">فتح وردية كاشير</span>
+              </>
+            )}
+          </button>
+
           {/* Test Sound and Notification Permissions */}
           <button
             onClick={requestNotificationsAndAudio}
@@ -803,6 +838,37 @@ const AdminDashboard: React.FC = () => {
               </div>
             </button>
 
+            {/* Shifts & Cashier Handover - Available for All */}
+            <button
+              onClick={() => setActiveTab('shifts')}
+              className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
+                activeTab === 'shifts'
+                  ? 'bg-[#E51E2A] text-white shadow-md'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Receipt className="w-4 h-4 shrink-0" />
+                <span>الورديات وتسليم الكاشير</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeShift ? (
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    activeTab === 'shifts' ? 'bg-white text-emerald-700' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    مفتوحة
+                  </span>
+                ) : (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                    activeTab === 'shifts' ? 'bg-white/20 text-zinc-900' : 'bg-zinc-200 text-zinc-600'
+                  }`}>
+                    مغلقة
+                  </span>
+                )}
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'shifts' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+              </div>
+            </button>
+
             {/* Products - Manager Only */}
             {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager' || adminUser?.role === 'content_manager') && (
               <button
@@ -939,6 +1005,48 @@ const AdminDashboard: React.FC = () => {
 
         {/* Main Content Area */}
         <main className={isCashier ? 'w-full space-y-6' : 'lg:col-span-9 space-y-6'}>
+          {/* Cashier Top Navigation Bar - for Cashier user role */}
+          {isCashier && (
+            <div className="bg-white border border-zinc-200 rounded-2xl p-2 flex items-center gap-2 shadow-sm">
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  activeTab === 'orders'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:bg-zinc-100'
+                }`}
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>شاشة الطلبات الحية (POS / KDS)</span>
+                {pendingOrdersCount > 0 && (
+                  <span className="bg-white text-[#E51E2A] text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                    {pendingOrdersCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('shifts')}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  activeTab === 'shifts'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:bg-zinc-100'
+                }`}
+              >
+                <Receipt className="w-4 h-4" />
+                <span>إدارة الوردية وتسليم الكاشير</span>
+                {activeShift ? (
+                  <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                    نشطة
+                  </span>
+                ) : (
+                  <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    مغلقة
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
 
       {/* ========================================================================= */}
       {/* TAB 1: OVERVIEW & PERFORMANCE STATS */}
@@ -1355,6 +1463,13 @@ const AdminDashboard: React.FC = () => {
                           </span>
                         </div>
 
+                        {order.cashierName && (
+                          <span className="text-xs px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 bg-zinc-100 text-zinc-700 border border-zinc-200">
+                            <ChefHat className="w-3 h-3 text-amber-600" />
+                            <span>كاشير: {order.cashierName}</span>
+                          </span>
+                        )}
+
                         {isDelayed && (
                           <span className="text-[11px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30 flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3" />
@@ -1639,6 +1754,13 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: SHIFTS & CASHIER HANDOVER MANAGEMENT */}
+      {/* ========================================================================= */}
+      {activeTab === 'shifts' && (
+        <ShiftManagementView />
       )}
 
       {/* ========================================================================= */}
@@ -2485,17 +2607,17 @@ const AdminDashboard: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-2xl border border-zinc-200 max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden">
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-zinc-900 text-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="w-8 h-8 rounded-xl bg-[#E51E2A] text-white flex items-center justify-center font-black text-sm">POS</span>
+            <div className="px-6 py-4 bg-white border-b border-zinc-200 text-zinc-900 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl bg-[#E51E2A] text-white flex items-center justify-center font-black text-xs shadow-md shadow-[#E51E2A]/20">POS</span>
                 <div>
-                  <h3 className="font-black text-base">نقطة بيع المطعم (تسجيل طلب داخل الصالة / تيك أواي)</h3>
-                  <p className="text-xs text-zinc-400">اختر الأصناف، حدد رقم الطاولة أو العميل، وأنشئ الطلب مع الطباعة الفورية</p>
+                  <h3 className="font-black text-base text-zinc-900">نقطة بيع المطعم (تسجيل طلب داخل الصالة / تيك أواي)</h3>
+                  <p className="text-xs text-zinc-500">اختر الأصناف، حدد رقم الطاولة أو العميل، وأنشئ الطلب مع الطباعة الفورية</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsPosModalOpen(false)}
-                className="w-9 h-9 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 hover:text-zinc-900 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2724,14 +2846,14 @@ const AdminDashboard: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-2xl border border-zinc-200 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="px-5 py-4 bg-zinc-900 text-white flex items-center justify-between shrink-0">
+            <div className="px-5 py-4 bg-white border-b border-zinc-200 text-zinc-900 flex items-center justify-between shrink-0">
               <div>
-                <h3 className="font-black text-sm">تخصيص وجبة: {posConfigProduct.nameAr}</h3>
-                <p className="text-[11px] text-zinc-400">اختر الحجم والإضافات المطلوبة قبل الإضافة</p>
+                <h3 className="font-black text-sm text-zinc-900">تخصيص وجبة: {posConfigProduct.nameAr}</h3>
+                <p className="text-[11px] text-zinc-500">اختر الحجم والإضافات المطلوبة قبل الإضافة</p>
               </div>
               <button
                 onClick={() => setPosConfigProduct(null)}
-                className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 hover:text-zinc-900 flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
