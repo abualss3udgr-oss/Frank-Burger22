@@ -10,6 +10,7 @@ import {
   arrayRemove,
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { trackAddToCart, trackPurchase } from '../lib/pixel';
 import { useAuth } from '../context/AuthContext';
 import {
   Language,
@@ -1022,6 +1023,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundManager.playAddToCart();
     const productName = language === 'ar' ? product.nameAr : product.nameEn;
     addToast(`${productName} أُضيف للسلة`, 'success');
+
+    // Trigger Meta Pixel AddToCart event
+    trackAddToCart({
+      id: product.id,
+      productId: product.id,
+      nameAr: product.nameAr,
+      nameEn: product.nameEn,
+      price: unitPrice,
+      quantity,
+    });
   };
 
   const removeFromCart = (cartItemId: string) => {
@@ -1129,6 +1140,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setOrderConfirmationOrder(newOrder);
     soundManager.playOrderSuccess();
     addToast(language === 'ar' ? 'تم تأكيد طلبك بنجاح!' : 'Order confirmed successfully!', 'success');
+
+    // Trigger Meta Pixel Purchase event (1 Purchase event with order value in EGP)
+    trackPurchase(newOrder);
 
     // 1. Instantly broadcast locally
     if (typeof window !== 'undefined') {

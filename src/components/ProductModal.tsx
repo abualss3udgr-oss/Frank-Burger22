@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Product, ProductSize, CartItemAddon } from '../types';
+import { trackViewContent } from '../lib/pixel';
 import { X, Plus, Minus, Check, Flame, ShoppingBag, Info, Sparkles, Star } from 'lucide-react';
 
 export const ProductModal: React.FC = () => {
@@ -28,6 +29,7 @@ export const ProductModal: React.FC = () => {
       setQuantity(1);
       setSpecialInstructions('');
       setIsAddedAnimation(false);
+      trackViewContent(product);
     }
   }, [product]);
 

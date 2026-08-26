@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
+import { initMetaPixel, trackPageView } from './lib/pixel';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ProductModal } from './components/ProductModal';
@@ -24,7 +25,12 @@ import { ResetPasswordView } from './views/ResetPasswordView';
 import { ForbiddenView } from './views/ForbiddenView';
 
 const MainContent: React.FC = () => {
-  const { currentView } = useApp();
+  const { currentView, settings } = useApp();
+
+  useEffect(() => {
+    initMetaPixel(settings?.facebookPixelId);
+    trackPageView(currentView);
+  }, [currentView, settings?.facebookPixelId]);
 
   // If in Password Reset flow
   if (currentView === 'reset-password' as any) {

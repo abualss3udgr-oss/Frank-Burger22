@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { OrderType, PaymentMethod } from '../types';
+import { trackInitiateCheckout } from '../lib/pixel';
 import {
   X,
   MapPin,
@@ -106,6 +107,12 @@ export const CheckoutModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    if (isCheckoutOpen && cart.length > 0) {
+      trackInitiateCheckout(cart, cartSubtotal);
+    }
+  }, [isCheckoutOpen]);
+
   if (!isCheckoutOpen) return null;
 
   const currentZone = deliveryZones.find((z) => z.id === selectedZoneId) || deliveryZones[0];
@@ -207,24 +214,24 @@ export const CheckoutModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
       {/* Backdrop */}
       <div className="fixed inset-0" onClick={() => setIsCheckoutOpen(false)} />
 
       {/* Modal Container */}
       <div
-        className="relative bg-[#16161b] border border-[#2d2d38] rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl z-10 max-h-[94vh] flex flex-col"
+        className="relative bg-white border border-zinc-200/80 rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl z-10 max-h-[94vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-[#272730] flex items-center justify-between bg-[#121217]">
+        <div className="p-4 sm:p-5 border-b border-zinc-200 flex items-center justify-between bg-zinc-50">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-[#E51E2A]/20 text-[#E51E2A]">
+            <div className="p-2 rounded-xl bg-red-50 text-[#E51E2A] border border-red-100">
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-white font-heading">{t('checkoutTitle')}</h2>
-              <p className="text-xs text-zinc-400">
+              <h2 className="text-lg font-black text-zinc-900 font-heading">{t('checkoutTitle')}</h2>
+              <p className="text-xs text-zinc-500 font-medium">
                 {language === 'ar' ? 'طلب فوري بدون إنشاء حساب إجباري' : 'Fast guest checkout'}
               </p>
             </div>
@@ -232,7 +239,7 @@ export const CheckoutModal: React.FC = () => {
 
           <button
             onClick={() => setIsCheckoutOpen(false)}
-            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/70 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -242,7 +249,7 @@ export const CheckoutModal: React.FC = () => {
         <form onSubmit={handlePlaceOrder} className="p-5 sm:p-6 overflow-y-auto space-y-6">
           {/* 1. Fulfillment Type Toggle */}
           <div>
-            <label className="block text-xs font-bold text-zinc-300 uppercase mb-2">
+            <label className="block text-xs font-bold text-zinc-700 uppercase mb-2">
               {t('deliveryTypeSection')}
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -251,8 +258,8 @@ export const CheckoutModal: React.FC = () => {
                 onClick={() => setOrderType('delivery')}
                 className={`py-3 px-4 rounded-xl border text-center font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   orderType === 'delivery'
-                    ? 'bg-[#E51E2A] text-white border-[#E51E2A] shadow-lg shadow-[#E51E2A]/20'
-                    : 'bg-[#1c1c24] text-zinc-300 border-[#272730] hover:border-zinc-500'
+                    ? 'bg-[#E51E2A] text-white border-[#E51E2A] shadow-md shadow-[#E51E2A]/20'
+                    : 'bg-zinc-100 text-zinc-700 border-zinc-200 hover:border-zinc-400'
                 }`}
               >
                 <Truck className="w-4 h-4" />
@@ -264,8 +271,8 @@ export const CheckoutModal: React.FC = () => {
                 onClick={() => setOrderType('pickup')}
                 className={`py-3 px-4 rounded-xl border text-center font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   orderType === 'pickup'
-                    ? 'bg-[#E51E2A] text-white border-[#E51E2A] shadow-lg shadow-[#E51E2A]/20'
-                    : 'bg-[#1c1c24] text-zinc-300 border-[#272730] hover:border-zinc-500'
+                    ? 'bg-[#E51E2A] text-white border-[#E51E2A] shadow-md shadow-[#E51E2A]/20'
+                    : 'bg-zinc-100 text-zinc-700 border-zinc-200 hover:border-zinc-400'
                 }`}
               >
                 <Store className="w-4 h-4" />
@@ -275,14 +282,14 @@ export const CheckoutModal: React.FC = () => {
           </div>
 
           {/* 2. Customer Information */}
-          <div className="bg-[#1c1c24] border border-[#2b2b36] p-4 sm:p-5 rounded-2xl space-y-3.5">
-            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+          <div className="bg-zinc-50 border border-zinc-200/80 p-4 sm:p-5 rounded-2xl space-y-3.5">
+            <h3 className="text-xs font-bold text-zinc-800 uppercase tracking-wider">
               {t('customerInfoSection')}
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                <label className="block text-xs font-medium text-zinc-600 mb-1">
                   {t('fullName')} <span className="text-[#E51E2A]">*</span>
                 </label>
                 <input
@@ -290,15 +297,15 @@ export const CheckoutModal: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={language === 'ar' ? 'مثال: أحمد محمود' : 'e.g. John Doe'}
-                  className={`w-full bg-[#16161b] border rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A] ${
-                    errors.name ? 'border-rose-500' : 'border-[#2e2e3a]'
+                  className={`w-full bg-white border rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A] ${
+                    errors.name ? 'border-rose-500' : 'border-zinc-300'
                   }`}
                 />
-                {errors.name && <p className="text-[10px] text-rose-400 mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-[10px] text-rose-500 font-medium mt-1">{errors.name}</p>}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                <label className="block text-xs font-medium text-zinc-600 mb-1">
                   {t('phoneNumber')} <span className="text-[#E51E2A]">*</span>
                 </label>
                 <input
@@ -306,16 +313,16 @@ export const CheckoutModal: React.FC = () => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="01012345678"
-                  className={`w-full bg-[#16161b] border rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-[#E51E2A] ${
-                    errors.phone ? 'border-rose-500' : 'border-[#2e2e3a]'
+                  className={`w-full bg-white border rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 font-mono focus:outline-none focus:border-[#E51E2A] ${
+                    errors.phone ? 'border-rose-500' : 'border-zinc-300'
                   }`}
                 />
-                {errors.phone && <p className="text-[10px] text-rose-400 mt-1">{errors.phone}</p>}
+                {errors.phone && <p className="text-[10px] text-rose-500 font-medium mt-1">{errors.phone}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-zinc-600 mb-1">
                 {t('whatsappNumber')}
               </label>
               <input
@@ -323,15 +330,15 @@ export const CheckoutModal: React.FC = () => {
                 value={whatsapp}
                 onChange={(e) => setWhatsapp(e.target.value)}
                 placeholder={language === 'ar' ? 'اختياري لتلقي تفاصيل التتبع عبر واتساب' : 'Optional for WhatsApp updates'}
-                className="w-full bg-[#16161b] border border-[#2e2e3a] rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:border-[#E51E2A]"
+                className="w-full bg-white border border-zinc-300 rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 font-mono focus:outline-none focus:border-[#E51E2A]"
               />
             </div>
           </div>
 
           {/* 3. Address or Branch selection */}
           {orderType === 'delivery' ? (
-            <div className="bg-[#1c1c24] border border-[#2b2b36] p-4 sm:p-5 rounded-2xl space-y-3.5">
-              <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="bg-zinc-50 border border-zinc-200/80 p-4 sm:p-5 rounded-2xl space-y-3.5">
+              <h3 className="text-xs font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#E51E2A]" />
                 <span>{t('selectZone')}</span>
               </h3>
@@ -341,7 +348,7 @@ export const CheckoutModal: React.FC = () => {
                 <select
                   value={selectedZoneId}
                   onChange={(e) => setSelectedZoneId(e.target.value)}
-                  className="w-full bg-[#16161b] border border-[#2e2e3a] rounded-xl py-2.5 px-3 text-xs text-white focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-white border border-zinc-300 rounded-xl py-2.5 px-3 text-xs text-zinc-900 focus:outline-none focus:border-[#E51E2A]"
                 >
                   {deliveryZones.map((zone) => (
                     <option key={zone.id} value={zone.id}>
@@ -354,7 +361,7 @@ export const CheckoutModal: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">
                     {t('streetAddress')} <span className="text-[#E51E2A]">*</span>
                   </label>
                   <input
@@ -362,17 +369,17 @@ export const CheckoutModal: React.FC = () => {
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
                     placeholder={language === 'ar' ? 'الشارع / رقم المنزل / معلم مميز' : 'Street / Landmarks'}
-                    className={`w-full bg-[#16161b] border rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A] ${
-                      errors.streetAddress ? 'border-rose-500' : 'border-[#2e2e3a]'
+                    className={`w-full bg-white border rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A] ${
+                      errors.streetAddress ? 'border-rose-500' : 'border-zinc-300'
                     }`}
                   />
                   {errors.streetAddress && (
-                    <p className="text-[10px] text-rose-400 mt-1">{errors.streetAddress}</p>
+                    <p className="text-[10px] text-rose-500 font-medium mt-1">{errors.streetAddress}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">
                     {t('buildingNumber')}
                   </label>
                   <input
@@ -380,13 +387,13 @@ export const CheckoutModal: React.FC = () => {
                     value={buildingNumber}
                     onChange={(e) => setBuildingNumber(e.target.value)}
                     placeholder={language === 'ar' ? 'العمارة 5 - الدور 3 - شقة 12' : 'Bldg 5 - Floor 3 - Apt 12'}
-                    className="w-full bg-[#16161b] border border-[#2e2e3a] rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A]"
+                    className="w-full bg-white border border-zinc-300 rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1">
+                <label className="block text-xs font-medium text-zinc-600 mb-1">
                   {t('deliveryNotes')}
                 </label>
                 <input
@@ -394,44 +401,44 @@ export const CheckoutModal: React.FC = () => {
                   value={deliveryNotes}
                   onChange={(e) => setDeliveryNotes(e.target.value)}
                   placeholder={language === 'ar' ? 'مثال: اترك الطلب عند الباب، لا ترن الجرس...' : 'e.g. Leave at door...'}
-                  className="w-full bg-[#16161b] border border-[#2e2e3a] rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-white border border-zinc-300 rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A]"
                 />
               </div>
             </div>
           ) : (
-            <div className="bg-[#1c1c24] border border-[#2b2b36] p-4 sm:p-5 rounded-2xl space-y-3">
-              <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="bg-zinc-50 border border-zinc-200/80 p-4 sm:p-5 rounded-2xl space-y-3">
+              <h3 className="text-xs font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-1.5">
                 <Store className="w-3.5 h-3.5 text-[#E51E2A]" />
                 <span>{language === 'ar' ? 'موقع استلام الطلب من المطعم' : 'Pickup Location'}</span>
               </h3>
 
-              <div className="p-4 rounded-xl border border-[#E51E2A]/40 bg-[#E51E2A]/10 text-start space-y-2">
+              <div className="p-4 rounded-xl border border-red-200 bg-red-50/60 text-start space-y-2">
                 <div className="flex items-center justify-between font-bold text-xs">
-                  <span className="text-white flex items-center gap-1.5">
+                  <span className="text-zinc-900 flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#E51E2A]" />
                     {language === 'ar' ? settings.addressAr : settings.addressEn}
                   </span>
-                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
                     {language === 'ar' ? 'استلام تيك أواي جاهز' : 'Takeaway Ready'}
                   </span>
                 </div>
-                <div className="text-[11px] text-zinc-300">
+                <div className="text-[11px] text-zinc-600 font-medium">
                   {language === 'ar'
                     ? 'سيتم تجهيز طلبك طازجاً وساخناً للاستلام فور وصولك للمطعم.'
                     : 'Your meal will be freshly prepared and ready for pickup upon arrival.'}
                 </div>
-                <div className="text-[10px] text-zinc-400 font-mono pt-1 flex items-center gap-1.5 flex-wrap">
+                <div className="text-[10px] text-zinc-500 font-mono pt-1 flex items-center gap-1.5 flex-wrap">
                   <span>{language === 'ar' ? settings.openingHoursAr : settings.openingHoursEn}</span>
                   <span>•</span>
-                  <span dir="ltr" className="font-bold text-zinc-300">{settings.phone || '01091266737'}</span>
+                  <span dir="ltr" className="font-bold text-zinc-700">{settings.phone || '01091266737'}</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* 4. Timing Option */}
-          <div className="bg-[#1c1c24] border border-[#2b2b36] p-4 sm:p-5 rounded-2xl space-y-3">
-            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="bg-zinc-50 border border-zinc-200/80 p-4 sm:p-5 rounded-2xl space-y-3">
+            <h3 className="text-xs font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-[#E51E2A]" />
               <span>{t('timingSection')}</span>
             </h3>
@@ -442,8 +449,8 @@ export const CheckoutModal: React.FC = () => {
                 onClick={() => setTimingType('now')}
                 className={`p-3 rounded-xl border text-center font-bold text-xs transition-all cursor-pointer ${
                   timingType === 'now'
-                    ? 'bg-[#E51E2A]/15 border-[#E51E2A] text-white'
-                    : 'bg-[#16161b] border-[#272730] text-zinc-400'
+                    ? 'bg-red-50 border-[#E51E2A] text-zinc-900 shadow-sm'
+                    : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-400'
                 }`}
               >
                 {t('orderNowTiming')}
@@ -454,8 +461,8 @@ export const CheckoutModal: React.FC = () => {
                 onClick={() => setTimingType('scheduled')}
                 className={`p-3 rounded-xl border text-center font-bold text-xs transition-all cursor-pointer ${
                   timingType === 'scheduled'
-                    ? 'bg-[#E51E2A]/15 border-[#E51E2A] text-white'
-                    : 'bg-[#16161b] border-[#272730] text-zinc-400'
+                    ? 'bg-red-50 border-[#E51E2A] text-zinc-900 shadow-sm'
+                    : 'bg-white border-zinc-200 text-zinc-600 hover:border-zinc-400'
                 }`}
               >
                 {t('orderScheduledTiming')}
@@ -469,15 +476,15 @@ export const CheckoutModal: React.FC = () => {
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
                   placeholder="مثال: اليوم — 10:30 مساءً"
-                  className="w-full bg-[#16161b] border border-[#2e2e3a] rounded-xl py-2 px-3 text-xs text-white font-medium focus:outline-none focus:border-[#E51E2A]"
+                  className="w-full bg-white border border-zinc-300 rounded-xl py-2 px-3 text-xs text-zinc-900 font-medium focus:outline-none focus:border-[#E51E2A]"
                 />
               </div>
             )}
           </div>
 
           {/* 5. Payment Methods */}
-          <div className="bg-[#1c1c24] border border-[#2b2b36] p-4 sm:p-5 rounded-2xl space-y-3">
-            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+          <div className="bg-zinc-50 border border-zinc-200/80 p-4 sm:p-5 rounded-2xl space-y-3">
+            <h3 className="text-xs font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-1.5">
               <CreditCard className="w-3.5 h-3.5 text-[#E51E2A]" />
               <span>{t('paymentSection')}</span>
             </h3>
@@ -487,8 +494,8 @@ export const CheckoutModal: React.FC = () => {
                 onClick={() => setPaymentMethod('cash_on_delivery')}
                 className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                   paymentMethod === 'cash_on_delivery'
-                    ? 'bg-[#E51E2A]/15 border-[#E51E2A] text-white'
-                    : 'bg-[#16161b] border-[#272730] text-zinc-300 hover:border-zinc-500'
+                    ? 'bg-red-50/80 border-[#E51E2A] text-zinc-900 shadow-sm'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -508,8 +515,8 @@ export const CheckoutModal: React.FC = () => {
                 onClick={() => setPaymentMethod('instapay')}
                 className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                   paymentMethod === 'instapay'
-                    ? 'bg-[#E51E2A]/15 border-[#E51E2A] text-white'
-                    : 'bg-[#16161b] border-[#272730] text-zinc-300 hover:border-zinc-500'
+                    ? 'bg-red-50/80 border-[#E51E2A] text-zinc-900 shadow-sm'
+                    : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -526,30 +533,30 @@ export const CheckoutModal: React.FC = () => {
               </label>
 
               {paymentMethod === 'instapay' && (
-                <div className="mt-3 p-4 bg-[#121217] border border-[#272730] rounded-xl space-y-3">
+                <div className="mt-3 p-4 bg-white border border-zinc-200 rounded-xl space-y-3 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-zinc-800 flex items-center gap-1.5">
                       <Smartphone className="w-3.5 h-3.5 text-[#E51E2A]" />
                       <span>{language === 'ar' ? 'بيانات التحويل عبر إنستاباي:' : 'InstaPay Transfer Details:'}</span>
                     </p>
-                    <span className="text-[11px] font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                    <span className="text-[11px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                       {settings.phone || '01091266737'}
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-zinc-600">
                     {language === 'ar'
                       ? 'يرجى تحويل المبلغ الإجمالي إلى الحساب/الرقم أعلاه ثم إرفاق لقطة شاشة (Screenshot) لتأكيد الدفع فوراً:'
                       : 'Please transfer the total amount to the number above and attach the payment screenshot below:'}
                   </p>
 
                   {!paymentProofPreview ? (
-                    <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-[#3a3a48] hover:border-[#E51E2A] rounded-xl cursor-pointer bg-[#181820] transition-colors group">
+                    <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-zinc-300 hover:border-[#E51E2A] rounded-xl cursor-pointer bg-zinc-50 hover:bg-zinc-100 transition-colors group">
                       <Upload className="w-6 h-6 text-zinc-400 group-hover:text-[#E51E2A] mb-1.5 transition-colors" />
-                      <span className="text-xs font-bold text-zinc-300 group-hover:text-white">
+                      <span className="text-xs font-bold text-zinc-700 group-hover:text-zinc-900">
                         {language === 'ar' ? 'اضغط لرفع صورة إيصال التحويل' : 'Click to upload transfer screenshot'}
                       </span>
-                      <span className="text-[10px] text-zinc-500 mt-0.5">PNG, JPG, JPEG</span>
+                      <span className="text-[10px] text-zinc-400 mt-0.5">PNG, JPG, JPEG</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -558,17 +565,17 @@ export const CheckoutModal: React.FC = () => {
                       />
                     </label>
                   ) : (
-                    <div className="relative rounded-xl overflow-hidden border border-[#2e2e3a] bg-[#181820] p-2 flex items-center gap-3">
+                    <div className="relative rounded-xl overflow-hidden border border-zinc-200 bg-zinc-50 p-2 flex items-center gap-3">
                       <img
                         src={paymentProofPreview}
                         alt="Payment Proof"
-                        className="w-16 h-16 object-cover rounded-lg border border-zinc-700"
+                        className="w-16 h-16 object-cover rounded-lg border border-zinc-300"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white truncate">
+                        <p className="text-xs font-bold text-zinc-900 truncate">
                           {paymentProof?.name || (language === 'ar' ? 'إيصال التحويل' : 'Proof Receipt')}
                         </p>
-                        <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                        <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
                           <CheckCircle2 className="w-3 h-3" />
                           <span>{language === 'ar' ? 'تم تجهيز الصورة للتأكيد' : 'Image ready for verification'}</span>
                         </p>
@@ -579,7 +586,7 @@ export const CheckoutModal: React.FC = () => {
                           setPaymentProof(null);
                           setPaymentProofPreview(null);
                         }}
-                        className="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors"
+                        className="p-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors"
                         title={language === 'ar' ? 'حذف الصورة' : 'Remove image'}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -588,7 +595,7 @@ export const CheckoutModal: React.FC = () => {
                   )}
 
                   {errors.payment && (
-                    <p className="text-[11px] text-rose-400 font-bold flex items-center gap-1 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">
+                    <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 bg-rose-50 p-2 rounded-lg border border-rose-200">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{errors.payment}</span>
                     </p>
@@ -600,11 +607,11 @@ export const CheckoutModal: React.FC = () => {
         </form>
 
         {/* Modal Action Bar */}
-        <div className="p-4 sm:p-5 bg-[#121217] border-t border-[#272730] flex items-center justify-between gap-4 shrink-0">
+        <div className="p-4 sm:p-5 bg-white border-t border-zinc-200 flex items-center justify-between gap-4 shrink-0">
           <div>
-            <div className="text-[11px] text-zinc-400 font-semibold">{t('total')}</div>
-            <div className="text-xl font-black text-white font-mono">
-              {finalTotal} <span className="text-xs text-[#E51E2A]">{t('currency')}</span>
+            <div className="text-[11px] text-zinc-500 font-semibold">{t('total')}</div>
+            <div className="text-xl font-black text-zinc-900 font-mono">
+              {finalTotal} <span className="text-xs text-[#E51E2A] font-bold">{t('currency')}</span>
             </div>
           </div>
 
@@ -612,7 +619,7 @@ export const CheckoutModal: React.FC = () => {
             type="button"
             onClick={handlePlaceOrder}
             disabled={isSubmitting}
-            className="flex-grow py-3.5 px-6 rounded-xl bg-[#E51E2A] hover:bg-[#c41420] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl shadow-[#E51E2A]/30 transition-all transform active:scale-98 disabled:opacity-50 cursor-pointer"
+            className="flex-grow py-3.5 px-6 rounded-xl bg-[#E51E2A] hover:bg-[#c41420] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-[#E51E2A]/20 transition-all transform active:scale-98 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? (
               <span>{t('submittingOrder')}</span>
