@@ -400,20 +400,18 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Main Top Header Bar */}
-      <header className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
         {/* Restaurant Identity & Live Indicator */}
         <div className="flex items-center gap-3.5">
-          <img 
-            src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png" 
-            alt="Frank Burger" 
-            className="h-12 sm:h-14 w-auto object-contain shrink-0"
-          />
+          {!isCashier && (
+            <img 
+              src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png" 
+              alt="Frank Burger" 
+              className="h-12 sm:h-14 w-auto object-contain shrink-0"
+            />
+          )}
           <div>
-            {isCashier ? (
-              <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
-                Frank Burger
-              </h1>
-            ) : (
+            {!isCashier && (
               <>
                 <div className="flex items-center gap-2.5">
                   <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
@@ -431,6 +429,17 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Center Logo for Cashier */}
+        {isCashier && (
+          <div className="flex justify-center my-1 md:my-0 md:absolute md:left-1/2 md:-translate-x-1/2">
+            <img 
+              src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png" 
+              alt="Frank Burger" 
+              className="h-14 sm:h-16 w-auto object-contain shrink-0"
+            />
+          </div>
+        )}
 
         {/* Action Controls & User Identity */}
         <div className="flex flex-wrap items-center gap-2">
