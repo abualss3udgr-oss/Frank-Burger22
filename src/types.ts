@@ -276,22 +276,110 @@ export interface RestaurantSettings {
   googleAnalyticsId: string;
 }
 
-export type AdminRole = 'super_admin' | 'cashier' | 'manager' | 'kitchen' | 'content_manager';
+export type AdminRole = 'super_admin' | 'admin' | 'cashier' | 'kitchen' | 'content_manager';
+
+export interface UserSessionInfo {
+  id?: string;
+  sessionId?: string;
+  device?: string;
+  deviceLabel?: string;
+  ip?: string;
+  userAgent?: string;
+  createdAt?: string;
+  lastActive?: string;
+  lastActiveAt?: string;
+  isCurrent?: boolean;
+}
 
 export interface AdminAccount {
   id: string;
   username: string;
-  password: string;
+  email?: string;
+  password?: string; // Plaintext fallback during initial boot
+  passwordHash?: string; // PBKDF2 cryptographic hash
+  passwordSalt?: string;
   name: string;
   role: AdminRole;
+  branchId?: string; // Branch isolation
+  branchNameAr?: string;
   securityPin: string;
   avatar?: string;
+  mfaEnabled?: boolean;
+  mfaSecret?: string;
+  activeSessions?: UserSessionInfo[];
+  failedLoginAttempts?: number;
+  lockedUntil?: number;
+  lastLoginAt?: string;
+  passwordChangedAt?: string;
+  createdAt?: string;
 }
 
 export interface AdminUser {
   id: string;
   username: string;
+  email?: string;
   name: string;
   role: AdminRole;
+  branchId?: string;
+  branchNameAr?: string;
   avatar: string;
+  mfaEnabled?: boolean;
+  sessionId?: string;
+  sessionExpiresAt?: number;
 }
+
+export interface PasswordResetRecord {
+  id: string;
+  username: string;
+  email: string;
+  tokenHash: string; // SHA-256 hash of random token
+  createdAt: string; // ISO
+  expiresAt: string; // ISO (15 minutes)
+  isUsed: boolean;
+  usedAt?: string;
+  ip?: string;
+}
+
+export type AuditAction =
+  | 'LOGIN_SUCCESS'
+  | 'LOGIN_FAILED'
+  | 'LOGOUT'
+  | 'MFA_CHALLENGE_FAILED'
+  | 'MFA_CHALLENGE_PASSED'
+  | 'RATE_LIMIT_TRIGGERED'
+  | 'PASSWORD_RESET_REQUESTED'
+  | 'PASSWORD_RESET_COMPLETED'
+  | 'PASSWORD_CHANGED'
+  | 'PASSWORD_CHANGE'
+  | 'MFA_ENABLED'
+  | 'MFA_DISABLED'
+  | 'ALL_SESSIONS_REVOKED'
+  | 'SESSION_REVOKED'
+  | 'USER_CREATED'
+  | 'USER_UPDATED'
+  | 'USER_DELETED'
+  | 'ROLE_CHANGED'
+  | 'PERMISSION_CHANGED'
+  | 'PRODUCT_CREATED'
+  | 'PRODUCT_UPDATED'
+  | 'PRODUCT_DELETED'
+  | 'ORDER_STATUS_CHANGED'
+  | 'SETTINGS_CHANGED'
+  | 'SHIFT_OPENED'
+  | 'SHIFT_CLOSED'
+  | 'UNAUTHORIZED_ACCESS_BLOCKED';
+
+export interface AuditLogEntry {
+  id: string;
+  userId?: string;
+  username: string;
+  role?: string;
+  action: AuditAction;
+  target?: string;
+  timestamp: string;
+  ip?: string;
+  userAgent?: string;
+  status: 'SUCCESS' | 'FAILURE' | 'WARNING';
+  details?: string;
+}
+

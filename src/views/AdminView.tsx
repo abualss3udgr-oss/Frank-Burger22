@@ -4,6 +4,9 @@ import { Product, Order, OrderStatus, Category, Coupon, Offer, Branch, CartItem,
 import { AdminLogin } from '../components/AdminLogin';
 import { PeakHoursChart } from '../components/PeakHoursChart';
 import { ShiftManagementView } from '../components/ShiftManagementView';
+import { UsersManagementTab } from '../components/UsersManagementTab';
+import { AuditLogsTab } from '../components/AuditLogsTab';
+import { SecuritySettingsTab } from '../components/SecuritySettingsTab';
 import { soundManager } from '../utils/audio';
 import {
   LayoutDashboard,
@@ -51,6 +54,10 @@ import {
   Lock,
   Banknote,
   Receipt,
+  Users,
+  Shield,
+  Activity,
+  KeyRound,
 } from 'lucide-react';
 
 // Sound alert helper using SoundEffects with auto-unlocked AudioContext & rich multi-part bell chime
@@ -97,11 +104,11 @@ const AdminDashboard: React.FC = () => {
     addShiftExpense,
   } = useApp();
 
-  const isCashier = adminUser?.role === 'cashier';
+  const isRestricted = adminUser?.role === 'cashier';
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orders' | 'shifts' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings'
-  >(() => (isCashier ? 'orders' : 'overview'));
+    'overview' | 'orders' | 'shifts' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings' | 'users' | 'audit_logs' | 'security'
+  >(() => (isRestricted ? 'orders' : 'overview'));
 
   // Search & Filter States
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
@@ -313,7 +320,7 @@ const AdminDashboard: React.FC = () => {
     const handleNewOrderIncoming = (e: Event) => {
       const customEvt = e as CustomEvent<Order>;
       const newOrder = customEvt.detail;
-      if (isCashier || soundEnabled) {
+      if (isRestricted || soundEnabled) {
         soundManager.unlockAudio();
         soundManager.playNewOrderAlert();
       }
@@ -338,13 +345,13 @@ const AdminDashboard: React.FC = () => {
 
     window.addEventListener('frank_new_order_event', handleNewOrderIncoming);
     return () => window.removeEventListener('frank_new_order_event', handleNewOrderIncoming);
-  }, [soundEnabled, isCashier]);
+  }, [soundEnabled, isRestricted]);
 
   // Auto sound notify & Browser Notification on new orders from Firestore snapshot
   useEffect(() => {
     if (orders.length > lastOrdersCount) {
       if (lastOrdersCount > 0) {
-        if (isCashier || soundEnabled) {
+        if (isRestricted || soundEnabled) {
           soundManager.unlockAudio();
           soundManager.playNewOrderAlert();
         }
@@ -365,7 +372,7 @@ const AdminDashboard: React.FC = () => {
       }
     }
     setLastOrdersCount(orders.length);
-  }, [orders, lastOrdersCount, soundEnabled, isCashier]);
+  }, [orders, lastOrdersCount, soundEnabled, isRestricted]);
 
   const showFeedbackBanner = (msg: string) => {
     setActionSuccessMessage(msg);
@@ -616,7 +623,7 @@ const AdminDashboard: React.FC = () => {
             className="h-9 sm:h-12 md:h-16 w-auto object-contain shrink-0"
           />
           <div>
-            {!isCashier && (
+            {!isRestricted && (
               <>
                 <div className="flex items-center gap-2.5">
                   <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
@@ -687,8 +694,8 @@ const AdminDashboard: React.FC = () => {
             <span className="text-[11px]">تجربة صوت التنبيه</span>
           </button>
 
-          {/* Sound Alert Toggle - Only for non-cashier */}
-          {!isCashier && (
+          {/* Sound Alert Toggle - Only for non-restricted */}
+          {!isRestricted && (
             <button
               onClick={() => {
                 const nextState = !soundEnabled;
@@ -709,8 +716,8 @@ const AdminDashboard: React.FC = () => {
             </button>
           )}
 
-          {/* Direct Admin URL Link copy - Only for non-cashier */}
-          {!isCashier && (
+          {/* Direct Admin URL Link copy - Only for non-restricted */}
+          {!isRestricted && (
             <button
               onClick={handleCopyAdminLink}
               title="نسخ الرابط المباشر لصفحة الإدارة"
@@ -731,8 +738,8 @@ const AdminDashboard: React.FC = () => {
             </button>
           )}
 
-          {/* Store Open / Closed Switch - Only for non-cashier */}
-          {!isCashier && (
+          {/* Store Open / Closed Switch - Only for non-restricted */}
+          {!isRestricted && (
             <button
               onClick={() => {
                 const newState = !settings.isStoreOpen;
@@ -756,8 +763,8 @@ const AdminDashboard: React.FC = () => {
             </button>
           )}
 
-          {/* View Customer Storefront - Only for non-cashier */}
-          {!isCashier && (
+          {/* View Customer Storefront - Only for non-restricted */}
+          {!isRestricted && (
             <button
               onClick={() => {
                 setCurrentView('home');
@@ -784,9 +791,9 @@ const AdminDashboard: React.FC = () => {
       </header>
 
       {/* Main Dashboard Layout with Sidebar & Content Area */}
-      <div className={isCashier ? 'w-full space-y-6' : 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'}>
-        {/* Sidebar Navigation - Only if not cashier */}
-        {!isCashier && (
+      <div className={isRestricted ? 'w-full space-y-6' : 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'}>
+        {/* Sidebar Navigation - Only if not restricted */}
+        {!isRestricted && (
           <aside className="lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4 sticky top-6">
             <div className="px-3 py-2 border-b border-zinc-100">
               <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">
@@ -795,8 +802,8 @@ const AdminDashboard: React.FC = () => {
             </div>
 
           <nav className="space-y-1.5">
-            {/* Overview - Manager Only */}
-            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+            {/* Overview - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
               <button
                 onClick={() => setActiveTab('overview')}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
@@ -869,8 +876,8 @@ const AdminDashboard: React.FC = () => {
               </div>
             </button>
 
-            {/* Products - Manager Only */}
-            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager' || adminUser?.role === 'content_manager') && (
+            {/* Products - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
               <button
                 onClick={() => setActiveTab('products')}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
@@ -894,8 +901,8 @@ const AdminDashboard: React.FC = () => {
               </button>
             )}
 
-            {/* Categories - Manager Only */}
-            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager' || adminUser?.role === 'content_manager') && (
+            {/* Categories - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
               <button
                 onClick={() => setActiveTab('categories')}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
@@ -919,8 +926,8 @@ const AdminDashboard: React.FC = () => {
               </button>
             )}
 
-            {/* Coupons - Manager Only */}
-            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+            {/* Coupons - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
               <button
                 onClick={() => setActiveTab('coupons')}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
@@ -944,8 +951,8 @@ const AdminDashboard: React.FC = () => {
               </button>
             )}
 
-            {/* Reviews - Manager Only */}
-            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+            {/* Reviews - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
               <button
                 onClick={() => setActiveTab('reviews')}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
@@ -969,8 +976,8 @@ const AdminDashboard: React.FC = () => {
               </button>
             )}
 
-            {/* Settings - Manager Only */}
-            {(adminUser?.role === 'super_admin' || adminUser?.role === 'manager') && (
+            {/* Settings - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
@@ -986,6 +993,58 @@ const AdminDashboard: React.FC = () => {
                 <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'settings' ? 'text-zinc-900' : 'text-zinc-500'}`} />
               </button>
             )}
+
+            {/* Users Management - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'users'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-4 h-4 shrink-0" />
+                  <span>إدارة المستخدمين والأدوار</span>
+                </div>
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'users' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+              </button>
+            )}
+
+            {/* Audit Logs - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
+              <button
+                onClick={() => setActiveTab('audit_logs')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'audit_logs'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Activity className="w-4 h-4 shrink-0" />
+                  <span>سجلات الأمان والتدقيق</span>
+                </div>
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'audit_logs' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+              </button>
+            )}
+
+            {/* Security & 2FA Settings - Available for all */}
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                activeTab === 'security'
+                  ? 'bg-[#E51E2A] text-white shadow-md'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="w-4 h-4 shrink-0" />
+                <span>الأمان والتحقق بخطوتين (2FA)</span>
+              </div>
+              <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'security' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+            </button>
           </nav>
 
           {/* Role Helper Info Box */}
@@ -1004,9 +1063,9 @@ const AdminDashboard: React.FC = () => {
         )}
 
         {/* Main Content Area */}
-        <main className={isCashier ? 'w-full space-y-6' : 'lg:col-span-9 space-y-6'}>
+        <main className={isRestricted ? 'w-full space-y-6' : 'lg:col-span-9 space-y-6'}>
           {/* Cashier Top Navigation Bar - for Cashier user role */}
-          {isCashier && (
+          {isRestricted && (
             <div className="bg-white border border-zinc-200 rounded-2xl p-2 flex items-center gap-2 shadow-sm">
               <button
                 onClick={() => setActiveTab('orders')}
@@ -2269,6 +2328,15 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Users Management Tab */}
+      {activeTab === 'users' && <UsersManagementTab />}
+
+      {/* Audit Logs Tab */}
+      {activeTab === 'audit_logs' && <AuditLogsTab />}
+
+      {/* Security & 2FA Settings Tab */}
+      {activeTab === 'security' && <SecuritySettingsTab />}
 
       {/* ========================================================================= */}
       {/* MODAL 1: ADD / EDIT PRODUCT MODAL (ARABIC) */}

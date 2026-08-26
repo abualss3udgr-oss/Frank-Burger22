@@ -20,9 +20,35 @@ import { UserProfileView } from './views/UserProfileView';
 import { BranchesView } from './views/BranchesView';
 import { AboutView } from './views/AboutView';
 import { AdminView } from './views/AdminView';
+import { ResetPasswordView } from './views/ResetPasswordView';
+import { ForbiddenView } from './views/ForbiddenView';
 
 const MainContent: React.FC = () => {
   const { currentView } = useApp();
+
+  // If in Password Reset flow
+  if (currentView === 'reset-password' as any) {
+    return (
+      <div className="min-h-screen bg-[#ffffff] text-zinc-900 flex flex-col font-sans selection:bg-[#E51E2A] selection:text-white">
+        <main className="flex-1">
+          <ResetPasswordView />
+        </main>
+        <ToastContainer />
+      </div>
+    );
+  }
+
+  // If Forbidden route
+  if (currentView === 'forbidden' as any) {
+    return (
+      <div className="min-h-screen bg-[#ffffff] text-zinc-900 flex flex-col font-sans selection:bg-[#E51E2A] selection:text-white">
+        <main className="flex-1">
+          <ForbiddenView />
+        </main>
+        <ToastContainer />
+      </div>
+    );
+  }
 
   // If in Admin portal, render dedicated standalone Admin & POS environment
   if (currentView === 'admin') {

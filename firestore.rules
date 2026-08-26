@@ -3,6 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // 1. Primitive Helper Functions
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -15,29 +16,83 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Orders Collection: Readable and writable for customer placing orders and cashier/admin
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidOrder(data) {
+      return data.id is string && data.id.size() <= 100 &&
+             data.status is string && data.status.size() <= 40 &&
+             data.total is number && data.total >= 0 &&
+             data.orderDate is string && data.orderDate.size() <= 60;
+    }
+
+    function isValidShift(data) {
+      return data.id is string && data.id.size() <= 100 &&
+             data.cashierName is string && data.cashierName.size() <= 100 &&
+             data.status is string && data.status.size() <= 40 &&
+             data.startingCash is number && data.startingCash >= 0;
+    }
+
+    function isValidAuditLog(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.action is string && data.action.size() <= 80 &&
+             data.timestamp is string && data.timestamp.size() <= 60 &&
+             data.status is string && data.status.size() <= 20;
+    }
+
+    function isValidPasswordReset(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.tokenHash is string && data.tokenHash.size() <= 128 &&
+             data.createdAt is string && data.createdAt.size() <= 60 &&
+             data.expiresAt is string && data.expiresAt.size() <= 60 &&
+             data.isUsed is bool;
+    }
+
+    // 2. Orders Collection
     match /orders/{orderId} {
       allow read: if true;
-      allow create: if isValidId(orderId) && incoming().id == orderId;
-      allow update: if isValidId(orderId);
-      allow delete: if true;
+      allow create: if isValidId(orderId) && incoming().id == orderId && isValidOrder(incoming());
+      allow update: if isValidId(orderId) && isValidOrder(incoming());
+      allow delete: if isValidId(orderId);
     }
 
-    // Cashier Shifts Collection: Handover and Shift auditing
+    // 3. Cashier Shifts Collection
     match /shifts/{shiftId} {
       allow read: if true;
-      allow create: if isValidId(shiftId) && incoming().id == shiftId;
-      allow update: if isValidId(shiftId);
-      allow delete: if true;
+      allow create: if isValidId(shiftId) && incoming().id == shiftId && isValidShift(incoming());
+      allow update: if isValidId(shiftId) && isValidShift(incoming());
+      allow delete: if isValidId(shiftId);
     }
 
-    // User Profiles
+    // 4. User Profiles
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && (!('role' in incoming()) || incoming().role == 'customer');
+      allow update: if isOwner(userId) && (!('role' in incoming()) || incoming().role == existing().role);
+      allow delete: if isOwner(userId);
     }
 
-    // Global deny fallback
+    // 5. Audit Logs (Append-Only / Immutable)
+    match /audit_logs/{logId} {
+      allow read: if true;
+      allow create: if isValidId(logId) && isValidAuditLog(incoming());
+      allow update, delete: if false; // Strict immutability
+    }
+
+    // 6. Password Resets Collection
+    match /password_resets/{resetId} {
+      allow read: if isValidId(resetId);
+      allow create: if isValidId(resetId) && isValidPasswordReset(incoming());
+      allow update: if isValidId(resetId) && isValidPasswordReset(incoming());
+      allow delete: if false;
+    }
+
+    // 7. Global Catch-All Fallback
     match /{document=**} {
       allow read, write: if false;
     }

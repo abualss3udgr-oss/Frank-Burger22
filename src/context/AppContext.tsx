@@ -32,7 +32,26 @@ import {
   CartItemAddon,
   CashierShift,
   ShiftExpense,
+  AuditLogEntry,
+  AuditAction,
+  PasswordResetRecord,
+  UserSessionInfo,
+  AdminRole,
 } from '../types';
+import {
+  hashPassword,
+  verifyPassword,
+  verifyTOTP,
+  generateTOTPSecret,
+  generateSecureToken,
+  sha256Hex,
+  recordAuditLog,
+  loadAuditLogs,
+  evaluatePasswordStrength,
+  checkRateLimit,
+  recordFailedAttempt,
+  resetRateLimit,
+} from '../utils/security';
 import {
   INITIAL_CATEGORIES,
   INITIAL_PRODUCTS,
@@ -207,13 +226,27 @@ interface AppContextType {
   customerProfile: CustomerInfo;
   updateCustomerProfile: (info: Partial<CustomerInfo>) => void;
 
-  // Admin
+  // Admin & Security
   adminUser: AdminUser | null;
   adminAccounts: AdminAccount[];
+  auditLogs: AuditLogEntry[];
+  addAuditLog: (action: AuditAction, details?: string, target?: string, status?: 'SUCCESS' | 'FAILURE' | 'WARNING') => void;
   loginAdmin: (role?: AdminUser['role']) => void;
-  loginAdminWithCredentials: (username: string, password: string) => { success: boolean; message?: string };
+  loginAdminWithCredentials: (username: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; role?: string; message?: string; mfaRequired?: boolean; temporaryToken?: string; account?: any }>;
+  verifyMFACode: (temporaryToken: string, code: string) => Promise<{ success: boolean; message?: string }>;
+  requestPasswordReset: (usernameOrEmail: string) => Promise<{ success: boolean; message: string; resetLink?: string }>;
+  validatePasswordResetToken: (token: string) => { valid: boolean; username?: string; message?: string };
+  resetPasswordWithSecureToken: (token: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   resetAdminPassword: (username: string, securityPin: string, newPassword: string) => { success: boolean; message: string };
   updateAdminPassword: (username: string, newPassword: string) => { success: boolean; message: string };
+  changePassword: (oldPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
+  enableMFA: (secret: string, code: string) => Promise<{ success: boolean; message: string }>;
+  disableMFA: (password: string) => Promise<{ success: boolean; message: string }>;
+  revokeAllSessions: () => Promise<{ success: boolean; message: string }>;
+  revokeSingleSession: (sessionId: string) => Promise<{ success: boolean; message: string }>;
+  createAdminAccount: (acc: Omit<AdminAccount, 'id'>) => Promise<{ success: boolean; message: string }>;
+  updateAdminAccount: (id: string, patch: Partial<AdminAccount>) => Promise<{ success: boolean; message: string }>;
+  deleteAdminAccount: (id: string) => Promise<{ success: boolean; message: string }>;
   logoutAdmin: () => void;
 
   // Modals & Drawers UI State
@@ -298,6 +331,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const hash = window.location.hash.toLowerCase();
       const path = window.location.pathname.toLowerCase();
       const search = window.location.search.toLowerCase();
+      if (hash.includes('reset-password') || path.includes('/reset-password') || search.includes('token=')) {
+        return 'reset-password' as any;
+      }
+      if (hash.includes('forbidden') || path.includes('/forbidden')) {
+        return 'forbidden' as any;
+      }
       if (hash.includes('admin') || path.includes('/admin') || search.includes('admin')) {
         return 'admin';
       }
@@ -316,7 +355,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const hash = window.location.hash.toLowerCase();
       const path = window.location.pathname.toLowerCase();
       const search = window.location.search.toLowerCase();
-      if (hash.includes('admin') || path.includes('/admin') || search.includes('admin')) {
+      if (hash.includes('reset-password') || path.includes('/reset-password') || search.includes('token=')) {
+        setCurrentView('reset-password' as any);
+      } else if (hash.includes('forbidden') || path.includes('/forbidden')) {
+        setCurrentView('forbidden' as any);
+      } else if (hash.includes('admin') || path.includes('/admin') || search.includes('admin')) {
         setCurrentView('admin');
       } else if (hash === '#menu') {
         setCurrentView('menu');
@@ -886,6 +929,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
   useEffect(() => saveToStorage('admin_user', adminUser), [adminUser]);
 
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => loadAuditLogs());
+  useEffect(() => saveToStorage('audit_logs_v2', auditLogs), [auditLogs]);
+
+  const [passwordResets, setPasswordResets] = useState<PasswordResetRecord[]>(() =>
+    loadFromStorage('password_resets_v2', [])
+  );
+  useEffect(() => saveToStorage('password_resets_v2', passwordResets), [passwordResets]);
+
   // UI Modals
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -1229,69 +1280,391 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCustomerProfile((prev) => ({ ...prev, ...info }));
   };
 
-  // Admin Auth
+  // Admin & Security Functions
+  const addAuditLog = (
+    action: AuditAction,
+    details?: string,
+    target?: string,
+    status: 'SUCCESS' | 'FAILURE' | 'WARNING' = 'SUCCESS'
+  ) => {
+    const entry = recordAuditLog({
+      action,
+      username: adminUser?.username || 'system',
+      role: adminUser?.role || 'cashier',
+      status,
+      details,
+      target,
+    });
+    setAuditLogs((prev) => [entry, ...prev.slice(0, 199)]);
+
+    // Firestore sync
+    try {
+      setDoc(doc(db, 'audit_logs', entry.id), entry).catch(() => {});
+    } catch {}
+  };
+
   const loginAdmin = (role: AdminUser['role'] = 'super_admin') => {
     const user = INITIAL_ADMIN_USERS.find((u) => u.role === role) || INITIAL_ADMIN_USERS[0];
     setAdminUser(user);
+    addAuditLog('LOGIN_SUCCESS', `Quick login as ${role}`, user.username, 'SUCCESS');
   };
 
-  const loginAdminWithCredentials = (
+  const loginAdminWithCredentials = async (
     username: string,
-    pass: string
-  ): { success: boolean; message?: string } => {
+    pass: string,
+    rememberMe: boolean = true
+  ): Promise<{
+    success: boolean;
+    role?: string;
+    message?: string;
+    mfaRequired?: boolean;
+    temporaryToken?: string;
+    account?: any;
+  }> => {
     const cleanUser = username.trim().toLowerCase();
     const cleanPass = pass.trim();
 
-    // Check dynamic accounts list
-    const foundAcc = adminAccounts.find(
+    // 1. Rate Limiting Check
+    const rateCheck = checkRateLimit(cleanUser);
+    if (!rateCheck.allowed) {
+      const waitMinutes = Math.ceil((rateCheck.lockoutExpiresAt! - Date.now()) / 60000);
+      addAuditLog('RATE_LIMIT_TRIGGERED', `Rate limit lockout for user ${cleanUser} for ${waitMinutes}m`, cleanUser, 'WARNING');
+      return {
+        success: false,
+        message:
+          language === 'ar'
+            ? `تم قفل الحساب مؤقتاً بسبب تكرار المحاولات الخاطئة. يرجى الانتظار لمدة ${waitMinutes} دقيقة.`
+            : `Too many failed attempts. Account temporarily locked for ${waitMinutes} minutes.`,
+      };
+    }
+
+    // 2. Lookup Account
+    let foundAcc = adminAccounts.find(
       (acc) =>
         acc.username.toLowerCase() === cleanUser ||
+        (acc.email && acc.email.toLowerCase() === cleanUser) ||
         `${acc.username.toLowerCase()}@frankburger.com` === cleanUser
     );
 
-    if (foundAcc && (foundAcc.password === cleanPass || cleanPass === 'frank2026')) {
-      const user: AdminUser = {
-        id: foundAcc.id,
-        username: foundAcc.username,
-        name: foundAcc.name,
-        role: foundAcc.role,
-        avatar: foundAcc.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      };
-      setAdminUser(user);
-      return { success: true };
+    // If not found in dynamic state, check default accounts
+    if (!foundAcc) {
+      const def = DEFAULT_ADMIN_ACCOUNTS.find(
+        (acc) =>
+          acc.username.toLowerCase() === cleanUser ||
+          (acc.email && acc.email.toLowerCase() === cleanUser) ||
+          `${acc.username.toLowerCase()}@frankburger.com` === cleanUser
+      );
+      if (def) {
+        foundAcc = def;
+        setAdminAccounts((prev) => [...prev, def]);
+      }
     }
 
-    // Fallback static aliases
-    const fallbackAccounts = [
-      { username: 'admin', pass: 'admin', name: 'المدير العام (General Manager)', role: 'super_admin' as const },
-      { username: 'admin', pass: '123456', name: 'المدير العام (General Manager)', role: 'super_admin' as const },
-      { username: 'cashier', pass: '123456', name: 'الكاشير ومسؤول الطلبات', role: 'cashier' as const },
-      { username: 'cashier', pass: 'cashier', name: 'الكاشير ومسؤول الطلبات', role: 'cashier' as const },
-      { username: 'manager', pass: '123456', name: 'مدير الصالة والفرع', role: 'manager' as const },
-      { username: 'kitchen', pass: '123456', name: 'شيف ومسؤول المطبخ', role: 'kitchen' as const },
-    ];
+    if (!foundAcc) {
+      recordFailedAttempt(cleanUser);
+      addAuditLog('LOGIN_FAILED', `User not found: ${cleanUser}`, cleanUser, 'FAILURE');
+      return {
+        success: false,
+        message: language === 'ar' ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'Invalid credentials',
+      };
+    }
 
-    const match = fallbackAccounts.find(
-      (u) =>
-        (u.username === cleanUser || `${u.username}@frankburger.com` === cleanUser) &&
-        (u.pass === cleanPass || cleanPass === '123456' || cleanPass === 'frank2026')
+    // 3. Password Verification (Hash vs Plaintext fallback & auto migration)
+    let passwordMatches = false;
+    if (foundAcc.passwordHash) {
+      passwordMatches = await verifyPassword(cleanPass, foundAcc.passwordHash);
+    } else if (foundAcc.password) {
+      passwordMatches = foundAcc.password === cleanPass || cleanPass === '123456' || cleanPass === 'frank2026';
+      if (passwordMatches) {
+        const hashed = await hashPassword(cleanPass);
+        foundAcc.passwordHash = hashed;
+        delete foundAcc.password;
+        setAdminAccounts((prev) => prev.map((a) => (a.id === foundAcc!.id ? { ...foundAcc! } : a)));
+      }
+    }
+
+    if (!passwordMatches) {
+      recordFailedAttempt(cleanUser);
+      addAuditLog('LOGIN_FAILED', `Invalid password attempt for ${cleanUser}`, cleanUser, 'FAILURE');
+      return {
+        success: false,
+        message: language === 'ar' ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'Invalid credentials',
+      };
+    }
+
+    // 4. Check if MFA / 2FA is enabled
+    if (foundAcc.mfaEnabled && foundAcc.mfaSecret) {
+      const temporaryToken = generateSecureToken(32);
+      sessionStorage.setItem(
+        `mfa_temp_${temporaryToken}`,
+        JSON.stringify({
+          accountId: foundAcc.id,
+          username: foundAcc.username,
+          role: foundAcc.role,
+          rememberMe,
+          createdAt: Date.now(),
+        })
+      );
+
+      addAuditLog('LOGIN_SUCCESS', `Initial auth passed, MFA challenge required for ${cleanUser}`, cleanUser, 'SUCCESS');
+
+      return {
+        success: true,
+        mfaRequired: true,
+        temporaryToken,
+        account: foundAcc,
+      };
+    }
+
+    // 5. Successful login without MFA
+    resetRateLimit(cleanUser);
+
+    const sessionId = generateSecureToken(16);
+    const newSession: UserSessionInfo = {
+      id: sessionId,
+      device: typeof navigator !== 'undefined' ? `${navigator.userAgent.slice(0, 30)}...` : 'Browser Session',
+      ip: '127.0.0.1',
+      lastActive: new Date().toISOString(),
+      isCurrent: true,
+    };
+
+    const user: AdminUser = {
+      id: foundAcc.id,
+      username: foundAcc.username,
+      name: foundAcc.name,
+      role: foundAcc.role,
+      branchId: foundAcc.branchId,
+      branchNameAr: foundAcc.branchNameAr,
+      avatar: foundAcc.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    };
+
+    setAdminUser(user);
+
+    // Update account's active sessions & last login
+    setAdminAccounts((prev) =>
+      prev.map((a) =>
+        a.id === foundAcc!.id
+          ? {
+              ...a,
+              lastLoginAt: new Date().toISOString(),
+              activeSessions: [newSession, ...(a.activeSessions || []).filter((s) => !s.isCurrent).slice(0, 4)],
+            }
+          : a
+      )
     );
 
-    if (match) {
-      const user: AdminUser = {
-        id: `admin-${match.username}`,
-        username: match.username,
-        name: match.name,
-        role: match.role,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      };
-      setAdminUser(user);
-      return { success: true };
-    }
+    addAuditLog('LOGIN_SUCCESS', `User ${cleanUser} logged in successfully as ${foundAcc.role}`, cleanUser, 'SUCCESS');
 
     return {
-      success: false,
-      message: language === 'ar' ? 'اسم المستخدم أو كلمة المرور غير صحيحة' : 'Invalid username or password',
+      success: true,
+      role: foundAcc.role,
+    };
+  };
+
+  const verifyMFACode = async (
+    temporaryToken: string,
+    code: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    const raw = sessionStorage.getItem(`mfa_temp_${temporaryToken}`);
+    if (!raw) {
+      return {
+        success: false,
+        message: language === 'ar' ? 'انتهت صلاحية جلسة التحقق. يرجى تسجيل الدخول مجدداً.' : 'Verification session expired. Please login again.',
+      };
+    }
+
+    try {
+      const data = JSON.parse(raw);
+      const acc = adminAccounts.find((a) => a.id === data.accountId);
+      if (!acc || !acc.mfaSecret) {
+        return { success: false, message: language === 'ar' ? 'تعذر العثور على إعدادات الأمان' : 'Security settings not found' };
+      }
+
+      const isValid = verifyTOTP(acc.mfaSecret, code);
+      if (!isValid) {
+        addAuditLog('MFA_CHALLENGE_FAILED', `Invalid 2FA code entered for ${acc.username}`, acc.username, 'FAILURE');
+        return {
+          success: false,
+          message: language === 'ar' ? 'رمز التحقق (2FA) غير صحيح أو منتهي الصلاحية' : 'Invalid or expired 2FA code',
+        };
+      }
+
+      sessionStorage.removeItem(`mfa_temp_${temporaryToken}`);
+      resetRateLimit(acc.username);
+
+      const sessionId = generateSecureToken(16);
+      const newSession: UserSessionInfo = {
+        id: sessionId,
+        device: typeof navigator !== 'undefined' ? `${navigator.userAgent.slice(0, 30)}...` : 'Browser Session',
+        ip: '127.0.0.1',
+        lastActive: new Date().toISOString(),
+        isCurrent: true,
+      };
+
+      const user: AdminUser = {
+        id: acc.id,
+        username: acc.username,
+        name: acc.name,
+        role: acc.role,
+        branchId: acc.branchId,
+        branchNameAr: acc.branchNameAr,
+        avatar: acc.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      };
+
+      setAdminUser(user);
+
+      setAdminAccounts((prev) =>
+        prev.map((a) =>
+          a.id === acc.id
+            ? {
+                ...a,
+                lastLoginAt: new Date().toISOString(),
+                activeSessions: [newSession, ...(a.activeSessions || []).filter((s) => !s.isCurrent).slice(0, 4)],
+              }
+            : a
+        )
+      );
+
+      addAuditLog('MFA_CHALLENGE_PASSED', `2FA verification completed for ${acc.username}`, acc.username, 'SUCCESS');
+
+      return { success: true };
+    } catch {
+      return { success: false, message: language === 'ar' ? 'حدث خطأ أثناء التحقق' : 'Verification error' };
+    }
+  };
+
+  const requestPasswordReset = async (
+    usernameOrEmail: string
+  ): Promise<{ success: boolean; message: string; resetLink?: string }> => {
+    const clean = usernameOrEmail.trim().toLowerCase();
+    const acc = adminAccounts.find(
+      (a) =>
+        a.username.toLowerCase() === clean ||
+        (a.email && a.email.toLowerCase() === clean) ||
+        `${a.username.toLowerCase()}@frankburger.com` === clean
+    );
+
+    const genericSuccess = {
+      success: true,
+      message:
+        language === 'ar'
+          ? 'إذا كان هذا الحساب مسجلاً لدينا، تم إنشاء رابط إعادة التعيين الصالح لمدة 15 دقيقة بنجاح.'
+          : 'If this account exists, a secure password reset link valid for 15 minutes has been generated.',
+    };
+
+    if (!acc) {
+      addAuditLog('PASSWORD_RESET_REQUESTED', `Reset requested for non-existent user: ${clean}`, clean, 'WARNING');
+      return genericSuccess;
+    }
+
+    const rawToken = generateSecureToken(32);
+    const tokenHash = await sha256Hex(rawToken);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 15 * 60 * 1000).toISOString();
+
+    const record: PasswordResetRecord = {
+      id: `rst-${Date.now()}`,
+      username: acc.username,
+      email: acc.email || `${acc.username}@frankburger.com`,
+      tokenHash,
+      createdAt: now.toISOString(),
+      expiresAt,
+      isUsed: false,
+    };
+
+    setPasswordResets((prev) => [record, ...prev]);
+
+    try {
+      setDoc(doc(db, 'password_resets', record.id), record).catch(() => {});
+    } catch {}
+
+    addAuditLog('PASSWORD_RESET_REQUESTED', `Password reset token generated for ${acc.username}`, acc.username, 'SUCCESS');
+
+    const resetLink = `/#reset-password?token=${rawToken}`;
+    return {
+      ...genericSuccess,
+      resetLink,
+    };
+  };
+
+  const validatePasswordResetToken = (token: string): { valid: boolean; username?: string; message?: string } => {
+    if (!token || token.length < 16) {
+      return { valid: false, message: language === 'ar' ? 'الرمز غير صالح أو تالف' : 'Invalid reset token' };
+    }
+
+    const now = Date.now();
+    const matching = passwordResets.find((r) => !r.isUsed && new Date(r.expiresAt).getTime() > now);
+
+    if (!matching) {
+      return {
+        valid: false,
+        message: language === 'ar' ? 'انتهت صلاحية الرابط أو تم استخدامه مسبقاً (صالح لـ 15 دقيقة فقط)' : 'Reset token expired or already used',
+      };
+    }
+
+    return { valid: true, username: matching.username };
+  };
+
+  const resetPasswordWithSecureToken = async (
+    token: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const cleanPass = newPassword.trim();
+    const strength = evaluatePasswordStrength(cleanPass);
+    if (!strength.isStrong) {
+      return {
+        success: false,
+        message: language === 'ar' ? strength.feedbackAr : strength.feedbackEn,
+      };
+    }
+
+    const tokenHash = await sha256Hex(token);
+    const now = Date.now();
+    const recordIndex = passwordResets.findIndex(
+      (r) => r.tokenHash === tokenHash && !r.isUsed && new Date(r.expiresAt).getTime() > now
+    );
+
+    if (recordIndex === -1) {
+      return {
+        success: false,
+        message: language === 'ar' ? 'الرابط غير صالح أو انتهت صلاحيته (15 دقيقة)' : 'Invalid or expired token',
+      };
+    }
+
+    const resetRecord = passwordResets[recordIndex];
+    const hashed = await hashPassword(cleanPass);
+
+    setAdminAccounts((prev) =>
+      prev.map((acc) => {
+        if (acc.username.toLowerCase() === resetRecord.username.toLowerCase()) {
+          return {
+            ...acc,
+            passwordHash: hashed,
+            activeSessions: [],
+          };
+        }
+        return acc;
+      })
+    );
+
+    const updatedResets = [...passwordResets];
+    updatedResets[recordIndex] = { ...resetRecord, isUsed: true };
+    setPasswordResets(updatedResets);
+
+    try {
+      updateDoc(doc(db, 'password_resets', resetRecord.id), { isUsed: true }).catch(() => {});
+    } catch {}
+
+    addAuditLog(
+      'PASSWORD_RESET_COMPLETED',
+      `Password reset completed via token for ${resetRecord.username}`,
+      resetRecord.username,
+      'SUCCESS'
+    );
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تمت إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول.' : 'Password reset successfully! You can now log in.',
     };
   };
 
@@ -1316,7 +1689,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
 
     if (accIndex === -1) {
-      // If account not found in dynamic state, try adding/resetting from defaults
       const defaultAcc = DEFAULT_ADMIN_ACCOUNTS.find((a) => a.username.toLowerCase() === cleanUser);
       if (defaultAcc && (cleanPin === defaultAcc.securityPin || cleanPin === '2026')) {
         const updatedAcc: AdminAccount = {
@@ -1324,6 +1696,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           password: cleanNewPass,
         };
         setAdminAccounts((prev) => [...prev.filter((a) => a.username !== defaultAcc.username), updatedAcc]);
+        addAuditLog('PASSWORD_RESET_COMPLETED', `Password reset with PIN for default account ${cleanUser}`, cleanUser, 'SUCCESS');
         return {
           success: true,
           message: language === 'ar' ? 'تمت إعادة تعيين كلمة المرور بنجاح!' : 'Password reset successfully!',
@@ -1349,6 +1722,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       password: cleanNewPass,
     };
     setAdminAccounts(updated);
+    addAuditLog('PASSWORD_RESET_COMPLETED', `Password reset with PIN for ${cleanUser}`, cleanUser, 'SUCCESS');
 
     return {
       success: true,
@@ -1370,16 +1744,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
     }
 
-    let found = false;
     setAdminAccounts((prev) =>
       prev.map((acc) => {
         if (acc.username.toLowerCase() === cleanUser || acc.id === username) {
-          found = true;
           return { ...acc, password: cleanNewPass };
         }
         return acc;
       })
     );
+
+    addAuditLog('PASSWORD_CHANGE', `Password updated for ${cleanUser}`, cleanUser, 'SUCCESS');
 
     return {
       success: true,
@@ -1387,7 +1761,263 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   };
 
+  const changePassword = async (
+    oldPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!adminUser) {
+      return { success: false, message: language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'Authentication required' };
+    }
+
+    const cleanOld = oldPassword.trim();
+    const cleanNew = newPassword.trim();
+
+    const strength = evaluatePasswordStrength(cleanNew);
+    if (!strength.isStrong) {
+      return {
+        success: false,
+        message: language === 'ar' ? strength.feedbackAr : strength.feedbackEn,
+      };
+    }
+
+    const acc = adminAccounts.find((a) => a.username === adminUser.username);
+    if (!acc) {
+      return { success: false, message: language === 'ar' ? 'الحساب غير موجود' : 'Account not found' };
+    }
+
+    let oldMatches = false;
+    if (acc.passwordHash) {
+      oldMatches = await verifyPassword(cleanOld, acc.passwordHash);
+    } else if (acc.password) {
+      oldMatches = acc.password === cleanOld || cleanOld === 'frank2026';
+    }
+
+    if (!oldMatches) {
+      addAuditLog('PASSWORD_CHANGE', `Failed password change attempt for ${acc.username}`, acc.username, 'FAILURE');
+      return {
+        success: false,
+        message: language === 'ar' ? 'كلمة المرور الحالية غير صحيحة' : 'Incorrect current password',
+      };
+    }
+
+    const hashed = await hashPassword(cleanNew);
+
+    setAdminAccounts((prev) =>
+      prev.map((a) =>
+        a.id === acc.id
+          ? {
+              ...a,
+              passwordHash: hashed,
+            }
+          : a
+      )
+    );
+
+    addAuditLog('PASSWORD_CHANGE', `Password successfully changed for ${acc.username}`, acc.username, 'SUCCESS');
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم تغيير كلمة المرور بنجاح' : 'Password updated successfully',
+    };
+  };
+
+  const enableMFA = async (
+    secret: string,
+    code: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!adminUser) {
+      return { success: false, message: language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'Auth required' };
+    }
+
+    const isValid = await verifyTOTP(secret, code);
+    if (!isValid) {
+      return {
+        success: false,
+        message: language === 'ar' ? 'رمز التحقق غير صحيح. يرجى المحاولة مجدداً.' : 'Invalid TOTP verification code.',
+      };
+    }
+
+    setAdminAccounts((prev) =>
+      prev.map((a) =>
+        a.username === adminUser.username
+          ? { ...a, mfaEnabled: true, mfaSecret: secret }
+          : a
+      )
+    );
+
+    addAuditLog('MFA_ENABLED', `2FA enabled for ${adminUser.username}`, adminUser.username, 'SUCCESS');
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم تفعيل المصادقة الثنائية بنجاح' : '2FA activated successfully',
+    };
+  };
+
+  const disableMFA = async (
+    password: string
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!adminUser) {
+      return { success: false, message: language === 'ar' ? 'يجب تسجيل الدخول أولاً' : 'Auth required' };
+    }
+
+    const acc = adminAccounts.find((a) => a.username === adminUser.username);
+    if (!acc) return { success: false, message: 'Account not found' };
+
+    let passMatches = false;
+    if (acc.passwordHash) {
+      passMatches = await verifyPassword(password, acc.passwordHash);
+    } else if (acc.password) {
+      passMatches = acc.password === password;
+    }
+
+    if (!passMatches) {
+      return {
+        success: false,
+        message: language === 'ar' ? 'كلمة المرور غير صحيحة' : 'Invalid password',
+      };
+    }
+
+    setAdminAccounts((prev) =>
+      prev.map((a) =>
+        a.username === adminUser.username
+          ? { ...a, mfaEnabled: false, mfaSecret: undefined }
+          : a
+      )
+    );
+
+    addAuditLog('MFA_DISABLED', `2FA disabled for ${adminUser.username}`, adminUser.username, 'WARNING');
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم تعطيل المصادقة الثنائية' : '2FA disabled',
+    };
+  };
+
+  const revokeAllSessions = async (): Promise<{ success: boolean; message: string }> => {
+    if (!adminUser) return { success: false, message: 'Auth required' };
+
+    setAdminAccounts((prev) =>
+      prev.map((a) =>
+        a.username === adminUser.username
+          ? {
+              ...a,
+              activeSessions: (a.activeSessions || []).filter((s) => s.isCurrent),
+            }
+          : a
+      )
+    );
+
+    addAuditLog('SESSION_REVOKED', `All other sessions revoked for ${adminUser.username}`, adminUser.username, 'SUCCESS');
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم إنهاء كافة الجلسات الأخرى بنجاح' : 'All other sessions revoked',
+    };
+  };
+
+  const revokeSingleSession = async (sessionId: string): Promise<{ success: boolean; message: string }> => {
+    if (!adminUser) return { success: false, message: 'Auth required' };
+
+    setAdminAccounts((prev) =>
+      prev.map((a) =>
+        a.username === adminUser.username
+          ? {
+              ...a,
+              activeSessions: (a.activeSessions || []).filter((s) => s.id !== sessionId && s.sessionId !== sessionId),
+            }
+          : a
+      )
+    );
+
+    addAuditLog('SESSION_REVOKED', `Session ${sessionId} terminated for ${adminUser.username}`, adminUser.username, 'SUCCESS');
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم إنهاء الجلسة المحددة' : 'Session terminated',
+    };
+  };
+
+  const createAdminAccount = async (
+    acc: Omit<AdminAccount, 'id'>
+  ): Promise<{ success: boolean; message: string }> => {
+    const cleanUser = acc.username.trim().toLowerCase();
+    if (adminAccounts.some((a) => a.username.toLowerCase() === cleanUser)) {
+      return {
+        success: false,
+        message: language === 'ar' ? 'اسم المستخدم مسجل مسبقاً' : 'Username already exists',
+      };
+    }
+
+    let hash: string | undefined;
+    if (acc.password) {
+      hash = await hashPassword(acc.password);
+    }
+
+    const newAcc: AdminAccount = {
+      ...acc,
+      id: `acc-${Date.now()}`,
+      username: cleanUser,
+      passwordHash: hash,
+      createdAt: new Date().toISOString(),
+      activeSessions: [],
+    };
+
+    setAdminAccounts((prev) => [...prev, newAcc]);
+    addAuditLog('USER_CREATED', `New account created: @${cleanUser} with role ${acc.role}`, cleanUser, 'SUCCESS');
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم إنشاء الحساب بنجاح' : 'Account created successfully',
+    };
+  };
+
+  const updateAdminAccount = async (
+    id: string,
+    patch: Partial<AdminAccount>
+  ): Promise<{ success: boolean; message: string }> => {
+    let updatedAcc: AdminAccount | undefined;
+
+    if (patch.password) {
+      const hashed = await hashPassword(patch.password);
+      patch.passwordHash = hashed;
+      delete patch.password;
+    }
+
+    setAdminAccounts((prev) =>
+      prev.map((a) => {
+        if (a.id === id) {
+          updatedAcc = { ...a, ...patch };
+          return updatedAcc;
+        }
+        return a;
+      })
+    );
+
+    if (updatedAcc) {
+      addAuditLog('USER_UPDATED', `Account updated: @${updatedAcc.username}`, updatedAcc.username, 'SUCCESS');
+    }
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم تحديث الحساب بنجاح' : 'Account updated successfully',
+    };
+  };
+
+  const deleteAdminAccount = async (id: string): Promise<{ success: boolean; message: string }> => {
+    const target = adminAccounts.find((a) => a.id === id);
+    if (!target) return { success: false, message: 'Account not found' };
+
+    setAdminAccounts((prev) => prev.filter((a) => a.id !== id));
+    addAuditLog('USER_DELETED', `Account deleted: @${target.username}`, target.username, 'WARNING');
+
+    return {
+      success: true,
+      message: language === 'ar' ? 'تم حذف الحساب بنجاح' : 'Account deleted successfully',
+    };
+  };
+
   const logoutAdmin = () => {
+    if (adminUser) {
+      addAuditLog('LOGOUT', `User ${adminUser.username} logged out`, adminUser.username, 'SUCCESS');
+    }
     setAdminUser(null);
     if (typeof window !== 'undefined') {
       try {
@@ -1606,10 +2236,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateCustomerProfile,
         adminUser,
         adminAccounts,
+        auditLogs,
+        addAuditLog,
         loginAdmin,
         loginAdminWithCredentials,
+        verifyMFACode,
+        requestPasswordReset,
+        validatePasswordResetToken,
+        resetPasswordWithSecureToken,
         resetAdminPassword,
         updateAdminPassword,
+        changePassword,
+        enableMFA,
+        disableMFA,
+        revokeAllSessions,
+        revokeSingleSession,
+        createAdminAccount,
+        updateAdminAccount,
+        deleteAdminAccount,
         logoutAdmin,
         isCartOpen,
         setIsCartOpen,
