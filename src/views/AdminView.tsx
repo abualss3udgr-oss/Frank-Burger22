@@ -411,7 +411,7 @@ const AdminDashboard: React.FC = () => {
           <div>
             {isCashier ? (
               <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
-                كشير ومسئول الطلبات — Frank Burger
+                Frank Burger
               </h1>
             ) : (
               <>
@@ -516,18 +516,20 @@ const AdminDashboard: React.FC = () => {
             </button>
           )}
 
-          {/* View Customer Storefront */}
-          <button
-            onClick={() => {
-              setCurrentView('home');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            title="الانتقال لمتجر العملاء"
-            className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 hover:text-zinc-900 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-semibold"
-          >
-            <Store className="w-3.5 h-3.5 text-zinc-500" />
-            <span className="text-[11px]">عرض المتجر</span>
-          </button>
+          {/* View Customer Storefront - Only for non-cashier */}
+          {!isCashier && (
+            <button
+              onClick={() => {
+                setCurrentView('home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              title="الانتقال لمتجر العملاء"
+              className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 hover:text-zinc-900 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-semibold"
+            >
+              <Store className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-[11px]">عرض المتجر</span>
+            </button>
+          )}
 
           {/* Logout Button */}
           <button
