@@ -142,6 +142,7 @@ interface AppContextType {
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
   cancelOrder: (orderId: string, reason?: string) => void;
   deleteOrder: (orderId: string) => void;
+  clearAllOrders: () => void;
   activeTrackingOrderId: string | null;
   setActiveTrackingOrderId: (id: string | null) => void;
   trackOrderLookup: (orderNumber: string, phone: string) => Order | null;
@@ -307,7 +308,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const loaded = loadFromStorage('settings_v2', INITIAL_SETTINGS);
     return { ...INITIAL_SETTINGS, ...(loaded || {}) };
   });
-  const [orders, setOrders] = useState<Order[]>(() => loadFromStorage('orders_v2', INITIAL_ORDERS));
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('frank_burger_orders_v2');
+    }
+    return [];
+  });
 
   // Loyalty points
   const [loyaltyPoints, setLoyaltyPoints] = useState<number>(() => loadFromStorage('loyalty_points', 0));
@@ -639,6 +645,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addToast(language === 'ar' ? 'تم حذف الطلب بنجاح' : 'Order deleted successfully', 'success');
   };
 
+  const clearAllOrders = () => {
+    setOrders([]);
+    addToast(language === 'ar' ? 'تم تصفير جميع الطلبات بنجاح' : 'All orders cleared successfully', 'success');
+  };
+
   const trackOrderLookup = (orderNumber: string, phone: string): Order | null => {
     const cleanNum = orderNumber.trim().toUpperCase();
     const cleanPhone = phone.trim();
@@ -713,8 +724,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const fallbackAccounts = [
       { username: 'admin', pass: 'admin', name: 'المدير العام (General Manager)', role: 'super_admin' as const },
       { username: 'admin', pass: '123456', name: 'المدير العام (General Manager)', role: 'super_admin' as const },
-      { username: 'cashier', pass: '123456', name: 'الكاشير ومسؤول الطلبات (Cashier)', role: 'cashier' as const },
-      { username: 'cashier', pass: 'cashier', name: 'الكاشير ومسؤول الطلبات (Cashier)', role: 'cashier' as const },
+      { username: 'cashier', pass: '123456', name: 'الكاشير ومسؤول الطلبات', role: 'cashier' as const },
+      { username: 'cashier', pass: 'cashier', name: 'الكاشير ومسؤول الطلبات', role: 'cashier' as const },
       { username: 'manager', pass: '123456', name: 'مدير الصالة والفرع', role: 'manager' as const },
       { username: 'kitchen', pass: '123456', name: 'شيف ومسؤول المطبخ', role: 'kitchen' as const },
     ];
@@ -1043,6 +1054,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateOrderStatus,
         cancelOrder,
         deleteOrder,
+        clearAllOrders,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
         trackOrderLookup,

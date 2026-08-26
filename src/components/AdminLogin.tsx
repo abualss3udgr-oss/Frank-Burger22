@@ -505,7 +505,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess }) => {
                       : 'bg-[#1e1e26] border-[#2c2c38] text-zinc-400'
                   }`}
                 >
-                  🧾 {isAr ? 'الكاشير (cashier)' : 'Cashier'}
+                  🧾 {isAr ? 'الكاشير ومسؤول الطلبات' : 'Cashier'}
                 </button>
               </div>
             </div>

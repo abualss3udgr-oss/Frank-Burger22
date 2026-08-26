@@ -1254,7 +1254,7 @@ export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
     id: 'acc-cashier',
     username: 'cashier',
     password: '123456',
-    name: 'الكاشير ومسؤول الطلبات (Cashier)',
+    name: 'الكاشير ومسؤول الطلبات',
     role: 'cashier',
     securityPin: '2026',
     avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
@@ -1272,7 +1272,7 @@ export const INITIAL_ADMIN_USERS: AdminUser[] = [
   {
     id: 'admin-cashier',
     username: 'cashier',
-    name: 'الكاشير ومسؤول الطلبات (Cashier)',
+    name: 'الكاشير ومسؤول الطلبات',
     role: 'cashier',
     avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80',
   },
