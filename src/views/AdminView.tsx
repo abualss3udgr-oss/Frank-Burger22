@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Product, Order, OrderStatus, Category, Coupon, Offer, Branch, CartItem } from '../types';
+import { Product, Order, OrderStatus, Category, Coupon, Offer, Branch, CartItem, PaymentMethod, ProductSize, CartItemAddon } from '../types';
 import { AdminLogin } from '../components/AdminLogin';
 import { PeakHoursChart } from '../components/PeakHoursChart';
+import { soundManager } from '../utils/audio';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -43,28 +44,13 @@ import {
   Sliders,
   ExternalLink,
   ChevronLeft,
+  Bell,
 } from 'lucide-react';
 
-// Sound alert helper using Web Audio API with a distinctive restaurant chime melody
+// Sound alert helper using SoundEffects with auto-unlocked AudioContext & rich multi-part bell chime
 const playChimeSound = () => {
-  try {
-    const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 rich chime sequence
-    notes.forEach((freq, idx) => {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.1);
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime + idx * 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.1 + 0.4);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(audioCtx.currentTime + idx * 0.1);
-      osc.stop(audioCtx.currentTime + idx * 0.1 + 0.4);
-    });
-  } catch {
-    // browser auto-play policy guard
-  }
+  soundManager.unlockAudio();
+  soundManager.playNewOrderAlert();
 };
 
 const AdminDashboard: React.FC = () => {
@@ -97,6 +83,7 @@ const AdminDashboard: React.FC = () => {
     branches,
     updateBranch,
     setActiveReceiptOrder,
+    addonGroups,
   } = useApp();
 
   const isCashier = adminUser?.role === 'cashier';
@@ -118,25 +105,32 @@ const AdminDashboard: React.FC = () => {
   const [posCustomerName, setPosCustomerName] = useState('زبون صالة');
   const [posCustomerPhone, setPosCustomerPhone] = useState('01000000000');
   const [posTableNumber, setPosTableNumber] = useState('1');
+  const [posOrderType, setPosOrderType] = useState<'pickup' | 'delivery'>('pickup');
+  const [posPaymentMethod, setPosPaymentMethod] = useState<PaymentMethod>('cash_on_delivery');
   const [posSelectedCategory, setPosSelectedCategory] = useState<string>('all');
   const [posProductSearch, setPosProductSearch] = useState('');
+
+  // POS Product Configuration Modal State
+  const [posConfigProduct, setPosConfigProduct] = useState<Product | null>(null);
+  const [posConfigSelectedSize, setPosConfigSelectedSize] = useState<ProductSize | undefined>(undefined);
+  const [posConfigSelectedAddons, setPosConfigSelectedAddons] = useState<CartItemAddon[]>([]);
+  const [posConfigSpecialInstructions, setPosConfigSpecialInstructions] = useState('');
+  const [posConfigQty, setPosConfigQty] = useState(1);
 
   const posCartSubtotal = posCart.reduce((sum, item) => sum + item.totalPrice, 0);
   const posCartTotal = posCartSubtotal;
 
   const handleAddProductToPos = (prod: Product) => {
-    const existingIndex = posCart.findIndex(i => i.productId === prod.id && !i.selectedSize && i.selectedAddons.length === 0);
-    if (existingIndex > -1) {
-      const updated = [...posCart];
-      const item = updated[existingIndex];
-      const newQty = item.quantity + 1;
-      updated[existingIndex] = {
-        ...item,
-        quantity: newQty,
-        totalPrice: item.unitPrice * newQty,
-      };
-      setPosCart(updated);
+    // If product has sizes or allowed add-ons, open configuration modal
+    if ((prod.availableSizes && prod.availableSizes.length > 0) || (prod.allowedAddonIds && prod.allowedAddonIds.length > 0)) {
+      const defSize = prod.availableSizes?.find(s => s.isDefault) || prod.availableSizes?.[0];
+      setPosConfigProduct(prod);
+      setPosConfigSelectedSize(defSize);
+      setPosConfigSelectedAddons([]);
+      setPosConfigSpecialInstructions('');
+      setPosConfigQty(1);
     } else {
+      // Add directly
       const newItem: CartItem = {
         cartItemId: `${prod.id}-${Date.now()}`,
         productId: prod.id,
@@ -148,6 +142,29 @@ const AdminDashboard: React.FC = () => {
       };
       setPosCart(prev => [...prev, newItem]);
     }
+  };
+
+  const handleConfirmConfiguredProduct = () => {
+    if (!posConfigProduct) return;
+    const sizeMod = posConfigSelectedSize ? posConfigSelectedSize.priceModifier : 0;
+    const addonsSum = posConfigSelectedAddons.reduce((sum, a) => sum + a.price, 0);
+    const unitPrice = Math.max(0, posConfigProduct.price + sizeMod + addonsSum);
+    const totalPrice = unitPrice * posConfigQty;
+
+    const newItem: CartItem = {
+      cartItemId: `${posConfigProduct.id}-${Date.now()}-${Math.random()}`,
+      productId: posConfigProduct.id,
+      product: posConfigProduct,
+      selectedSize: posConfigSelectedSize,
+      selectedAddons: posConfigSelectedAddons,
+      specialInstructions: posConfigSpecialInstructions.trim() || undefined,
+      quantity: posConfigQty,
+      unitPrice,
+      totalPrice,
+    };
+
+    setPosCart(prev => [...prev, newItem]);
+    setPosConfigProduct(null);
   };
 
   const handleUpdatePosQty = (cartItemId: string, delta: number) => {
@@ -175,13 +192,13 @@ const AdminDashboard: React.FC = () => {
       customer: {
         name: posCustomerName || 'زبون صالة',
         phone: posCustomerPhone || '01000000000',
-        addressStreet: `طاولة رقم ${posTableNumber} - صالة ومطعم`,
+        addressStreet: posOrderType === 'pickup' ? `طاولة رقم ${posTableNumber} - صالة ومطعم` : 'توصيل سريع - فرع المطعم',
         pickupBranchId: branches[0]?.id,
       },
       items: posCart,
-      orderType: 'pickup',
+      orderType: posOrderType,
       status: 'pending',
-      paymentMethod: 'cash_on_delivery',
+      paymentMethod: posPaymentMethod,
       paymentStatus: 'paid',
       subtotal: posCartSubtotal,
       discount: 0,
@@ -244,36 +261,100 @@ const AdminDashboard: React.FC = () => {
     isActive: true,
   });
 
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => {
+    return typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
+  });
+
+  // Request notification permission and unlock audio
+  const requestNotificationsAndAudio = async () => {
+    soundManager.unlockAudio();
+    soundManager.playNewOrderAlert();
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        setNotificationPermission(perm);
+        if (perm === 'granted') {
+          showFeedbackBanner('🔔 تم تفعيل إشعارات المتصفح والتنبيه الصوتي بنجاح!');
+          new Notification('🍔 تم تفعيل تنبيهات الطلبات بنجاح!', {
+            body: 'ستصلك إشعارات فورية ورنين جرس عند وصول أي طلب جديد في المطعم.',
+            icon: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=120&h=120&q=80',
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
+  };
+
   // Request notification permission on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'default') {
-        Notification.requestPermission();
+        Notification.requestPermission().then((perm) => {
+          setNotificationPermission(perm);
+        });
       }
     }
   }, []);
 
-  // Auto sound notify & Browser Notification on new orders
+  // Listen for real-time order events dispatched across the app / tabs / Firestore
   useEffect(() => {
-    if (orders.length > lastOrdersCount) {
+    const handleNewOrderIncoming = (e: Event) => {
+      const customEvt = e as CustomEvent<Order>;
+      const newOrder = customEvt.detail;
       if (isCashier || soundEnabled) {
-        playChimeSound();
+        soundManager.unlockAudio();
+        soundManager.playNewOrderAlert();
       }
-      showFeedbackBanner('تم استلام طلب جديد في النظام!');
+      if (newOrder) {
+        showFeedbackBanner(`🍔 طلب جديد وصل الآن! #${newOrder.id} (${newOrder.total} ج.م)`);
+      } else {
+        showFeedbackBanner('🍔 تم استلام طلب جديد في النظام!');
+      }
 
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' && newOrder) {
         try {
-          new Notification('🍔 طلب جديد في فرانك برجر!', {
-            body: 'تم استلام طلب جديد بنجاح، يرجى مراجعة لوحة الكشير.',
+          new Notification(`🍔 طلب جديد #${newOrder.id} - ${newOrder.customer?.name || 'زبون'}`, {
+            body: `بقيمة ${newOrder.total} ج.م | ${newOrder.orderType === 'delivery' ? 'توصيل' : 'استلام / صالة'} | اضغط للمعاينة`,
             icon: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=120&h=120&q=80',
+            tag: `order-${newOrder.id}`,
           });
         } catch {
           // fallback
         }
       }
+    };
+
+    window.addEventListener('frank_new_order_event', handleNewOrderIncoming);
+    return () => window.removeEventListener('frank_new_order_event', handleNewOrderIncoming);
+  }, [soundEnabled, isCashier]);
+
+  // Auto sound notify & Browser Notification on new orders from Firestore snapshot
+  useEffect(() => {
+    if (orders.length > lastOrdersCount) {
+      if (lastOrdersCount > 0) {
+        if (isCashier || soundEnabled) {
+          soundManager.unlockAudio();
+          soundManager.playNewOrderAlert();
+        }
+        const newest = orders[0];
+        showFeedbackBanner(newest ? `🍔 طلب جديد وصل الآن! #${newest.id} (${newest.total} ج.م)` : 'تم استلام طلب جديد في النظام!');
+
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' && newest) {
+          try {
+            new Notification(`🍔 طلب جديد #${newest.id} في فرانك برجر!`, {
+              body: `العميل: ${newest.customer?.name || 'زبون'} | ${newest.total} ج.م | اضغط لمراجعة الطلب`,
+              icon: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=120&h=120&q=80',
+              tag: `order-${newest.id}`,
+            });
+          } catch {
+            // fallback
+          }
+        }
+      }
     }
     setLastOrdersCount(orders.length);
-  }, [orders.length, lastOrdersCount, soundEnabled, isCashier]);
+  }, [orders, lastOrdersCount, soundEnabled, isCashier]);
 
   const showFeedbackBanner = (msg: string) => {
     setActionSuccessMessage(msg);
@@ -532,7 +613,7 @@ const AdminDashboard: React.FC = () => {
                   </h1>
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>مباشر متصل</span>
+                    <span>مباشر متصل لحظياً</span>
                   </div>
                 </div>
                 <p className="text-xs text-zinc-500 mt-0.5">
@@ -560,6 +641,16 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Test Sound and Notification Permissions */}
+          <button
+            onClick={requestNotificationsAndAudio}
+            title="تجربة صوت التنبيه والتأكد من إذن الإشعارات"
+            className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 transition-all cursor-pointer shadow-sm active:scale-95"
+          >
+            <Bell className="w-3.5 h-3.5" />
+            <span className="text-[11px]">تجربة صوت التنبيه</span>
+          </button>
 
           {/* Sound Alert Toggle - Only for non-cashier */}
           {!isCashier && (
@@ -2517,32 +2608,51 @@ const AdminDashboard: React.FC = () => {
                   </div>
 
                   {/* Cart Items List */}
-                  <div className="space-y-2 max-h-[220px] overflow-y-auto pe-1">
+                  <div className="space-y-2 max-h-[190px] overflow-y-auto pe-1">
                     {posCart.length === 0 ? (
                       <div className="text-center py-8 text-zinc-400 text-xs font-semibold">
                         لم تقم بإضافة أي أصناف للطلب بعد.<br />انقر على الوجبات من القائمة لإضافتها.
                       </div>
                     ) : (
                       posCart.map(item => (
-                        <div key={item.cartItemId} className="bg-white border border-zinc-200 rounded-xl p-2.5 flex items-center justify-between shadow-sm">
-                          <div className="space-y-0.5 flex-1 pe-2">
-                            <span className="font-bold text-xs text-zinc-900 block">{item.product.nameAr}</span>
-                            <span className="text-[11px] font-mono text-[#E51E2A] font-bold">{item.totalPrice} ج.م</span>
+                        <div key={item.cartItemId} className="bg-white border border-zinc-200 rounded-xl p-3 space-y-1.5 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-xs text-zinc-900">{item.product.nameAr}</span>
+                            <span className="font-mono text-xs font-black text-[#E51E2A]">{item.totalPrice} ج.م</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleUpdatePosQty(item.cartItemId, -1)}
-                              className="w-6 h-6 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center font-bold cursor-pointer"
-                            >
-                              -
-                            </button>
-                            <span className="font-mono text-xs font-bold text-zinc-900 w-4 text-center">{item.quantity}</span>
-                            <button
-                              onClick={() => handleUpdatePosQty(item.cartItemId, 1)}
-                              className="w-6 h-6 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center font-bold cursor-pointer"
-                            >
-                              +
-                            </button>
+
+                          {/* Size & Add-ons breakdown */}
+                          <div className="text-[11px] text-zinc-500 space-y-0.5">
+                            {item.selectedSize && (
+                              <div className="text-zinc-700 font-medium">الحجم: <span className="text-[#E51E2A] font-bold">{item.selectedSize.nameAr}</span></div>
+                            )}
+                            {item.selectedAddons && item.selectedAddons.length > 0 && (
+                              <div className="text-zinc-600">
+                                الإضافات: {item.selectedAddons.map(a => a.nameAr).join(', ')}
+                              </div>
+                            )}
+                            {item.specialInstructions && (
+                              <div className="text-amber-600 italic">ملاحظة: {item.specialInstructions}</div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-zinc-100">
+                            <span className="text-[10px] text-zinc-400 font-mono">القطعة: {item.unitPrice} ج.م</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleUpdatePosQty(item.cartItemId, -1)}
+                                className="w-5 h-5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center font-bold text-xs cursor-pointer"
+                              >
+                                -
+                              </button>
+                              <span className="font-mono text-xs font-bold text-zinc-900 w-4 text-center">{item.quantity}</span>
+                              <button
+                                onClick={() => handleUpdatePosQty(item.cartItemId, 1)}
+                                className="w-5 h-5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 flex items-center justify-center font-bold text-xs cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))
@@ -2550,8 +2660,34 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Footer Totals & Checkout Button */}
+                {/* Footer Totals & Payment Method & Checkout Button */}
                 <div className="space-y-3 pt-4 border-t border-zinc-200 mt-4">
+                  {/* Order Type & Payment Method Selectors */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <label className="block text-[11px] font-bold text-zinc-600 mb-1">نوع الطلب</label>
+                      <select
+                        value={posOrderType}
+                        onChange={(e) => setPosOrderType(e.target.value as 'pickup' | 'delivery')}
+                        className="w-full bg-white border border-zinc-200 rounded-xl p-2 text-xs font-bold text-zinc-900 outline-none focus:border-[#E51E2A]"
+                      >
+                        <option value="pickup">صالة / مطعم (Dine-in)</option>
+                        <option value="delivery">تيك أواي سريع</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-zinc-600 mb-1">طريقة الدفع</label>
+                      <select
+                        value={posPaymentMethod}
+                        onChange={(e) => setPosPaymentMethod(e.target.value as PaymentMethod)}
+                        className="w-full bg-white border border-zinc-200 rounded-xl p-2 text-xs font-bold text-zinc-900 outline-none focus:border-[#E51E2A]"
+                      >
+                        <option value="cash_on_delivery">نقدي (كاش الصندوق)</option>
+                        <option value="instapay">إنستاباي (InstaPay)</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between text-zinc-600">
                       <span>المجموع الفرعي:</span>
@@ -2576,6 +2712,155 @@ const AdminDashboard: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* POS PRODUCT CONFIGURATION MODAL (Sizes & Add-ons) */}
+      {/* ========================================================================= */}
+      {posConfigProduct && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-zinc-200 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-4 bg-zinc-900 text-white flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="font-black text-sm">تخصيص وجبة: {posConfigProduct.nameAr}</h3>
+                <p className="text-[11px] text-zinc-400">اختر الحجم والإضافات المطلوبة قبل الإضافة</p>
+              </div>
+              <button
+                onClick={() => setPosConfigProduct(null)}
+                className="w-8 h-8 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1 text-xs">
+              {/* Sizes */}
+              {posConfigProduct.availableSizes && posConfigProduct.availableSizes.length > 0 && (
+                <div className="space-y-2">
+                  <label className="block font-bold text-zinc-800">اختر الحجم:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {posConfigProduct.availableSizes.map(size => (
+                      <button
+                        key={size.id}
+                        type="button"
+                        onClick={() => setPosConfigSelectedSize(size)}
+                        className={`p-2.5 rounded-xl border text-center font-bold transition-all cursor-pointer ${
+                          posConfigSelectedSize?.id === size.id
+                            ? 'border-[#E51E2A] bg-[#E51E2A]/5 text-[#E51E2A]'
+                            : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300'
+                        }`}
+                      >
+                        <div>{size.nameAr}</div>
+                        <div className="font-mono text-[11px] text-zinc-500">+{size.priceModifier} ج.م</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add-ons */}
+              {posConfigProduct.allowedAddonIds && posConfigProduct.allowedAddonIds.length > 0 && (
+                <div className="space-y-3">
+                  <label className="block font-bold text-zinc-800">الإضافات المتاحة:</label>
+                  {addonGroups
+                    .filter(group => posConfigProduct.allowedAddonIds?.includes(group.id))
+                    .map(group => (
+                      <div key={group.id} className="space-y-1.5 bg-zinc-50 p-3 rounded-2xl border border-zinc-200">
+                        <span className="font-bold text-zinc-900 block">{group.titleAr}</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          {group.options.map(opt => {
+                            const isSelected = posConfigSelectedAddons.some(a => a.optionId === opt.id);
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setPosConfigSelectedAddons(prev => prev.filter(a => a.optionId !== opt.id));
+                                  } else {
+                                    setPosConfigSelectedAddons(prev => [
+                                      ...prev,
+                                      {
+                                        groupId: group.id,
+                                        groupTitleAr: group.titleAr,
+                                        groupTitleEn: group.titleEn,
+                                        optionId: opt.id,
+                                        nameAr: opt.nameAr,
+                                        nameEn: opt.nameEn,
+                                        price: opt.price,
+                                      }
+                                    ]);
+                                  }
+                                }}
+                                className={`p-2 rounded-xl border flex items-center justify-between text-start transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'border-[#E51E2A] bg-[#E51E2A]/10 text-zinc-900 font-bold'
+                                    : 'border-zinc-200 bg-white text-zinc-700'
+                                }`}
+                              >
+                                <span>{opt.nameAr}</span>
+                                <span className="font-mono text-[11px] text-[#E51E2A]">+{opt.price} ج.م</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Special Instructions */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-800">ملاحظات خاصة (بدون بصل، مستوي جيداً...)</label>
+                <input
+                  type="text"
+                  value={posConfigSpecialInstructions}
+                  onChange={(e) => setPosConfigSpecialInstructions(e.target.value)}
+                  placeholder="أدخل أي ملاحظات خاصة بالوجبة..."
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-2.5 text-zinc-900 outline-none focus:border-[#E51E2A]"
+                />
+              </div>
+
+              {/* Quantity */}
+              <div className="flex items-center justify-between pt-2">
+                <span className="font-bold text-zinc-800">الكمية:</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPosConfigQty(Math.max(1, posConfigQty - 1))}
+                    className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 font-bold flex items-center justify-center cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="font-mono font-bold text-sm w-6 text-center">{posConfigQty}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPosConfigQty(posConfigQty + 1)}
+                    className="w-8 h-8 rounded-xl bg-zinc-100 hover:bg-zinc-200 font-bold flex items-center justify-center cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex items-center justify-between shrink-0">
+              <div className="font-mono font-black text-sm text-[#E51E2A]">
+                الإجمالي: {Math.max(0, (posConfigProduct.price + (posConfigSelectedSize?.priceModifier || 0) + posConfigSelectedAddons.reduce((s, a) => s + a.price, 0)) * posConfigQty)} ج.م
+              </div>
+              <button
+                type="button"
+                onClick={handleConfirmConfiguredProduct}
+                className="px-5 py-2.5 rounded-xl bg-[#E51E2A] hover:bg-[#c81520] text-white font-bold text-xs shadow-lg shadow-[#E51E2A]/25 cursor-pointer"
+              >
+                إضافة إلى السلة
+              </button>
             </div>
           </div>
         </div>

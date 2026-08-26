@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import {
   doc,
+  setDoc,
   updateDoc,
+  deleteDoc,
+  collection,
+  onSnapshot,
   arrayUnion,
   arrayRemove,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import {
   Language,
@@ -48,6 +52,53 @@ import {
   getMyDeviceOrderIds,
   saveOrderToMyDevice,
 } from '../utils/device';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map((provider) => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  return errInfo;
+}
 
 // Zero initial orders so real orders show up cleanly
 const INITIAL_ORDERS: Order[] = [];
@@ -310,8 +361,75 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [orders, setOrders] = useState<Order[]>(() => loadFromStorage('orders_v2', INITIAL_ORDERS));
 
-  // Sync orders across tabs in real-time
+  // Sync orders in real-time across ALL devices, tabs, and clients via Firestore and BroadcastChannel
   useEffect(() => {
+    // 1. Setup Firestore real-time listener for multi-device & cloud synchronization
+    const ordersCollectionRef = collection(db, 'orders');
+    const unsubscribeFirestore = onSnapshot(
+      ordersCollectionRef,
+      (snapshot) => {
+        const firestoreOrders: Order[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Order;
+          if (data && data.id) {
+            firestoreOrders.push(data);
+          }
+        });
+
+        if (firestoreOrders.length > 0) {
+          firestoreOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+          setOrders(firestoreOrders);
+          saveToStorage('orders_v2', firestoreOrders);
+        }
+
+        // Detect newly added order docs in real-time
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const addedOrder = change.doc.data() as Order;
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: addedOrder }));
+            }
+          }
+        });
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, 'orders');
+      }
+    );
+
+    // 2. BroadcastChannel for instant zero-latency sync between tabs on same device
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      bc = new BroadcastChannel('frank_burger_orders_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'NEW_ORDER' && event.data?.order) {
+          const newOrd = event.data.order as Order;
+          setOrders((prev) => {
+            if (prev.some((o) => o.id === newOrd.id)) return prev;
+            return [newOrd, ...prev];
+          });
+          window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: newOrd }));
+        } else if (event.data?.type === 'UPDATE_STATUS') {
+          const { orderId, status, note } = event.data;
+          setOrders((prev) =>
+            prev.map((ord) =>
+              ord.id === orderId
+                ? {
+                    ...ord,
+                    status,
+                    statusHistory: [
+                      ...ord.statusHistory,
+                      { status, timestamp: new Date().toISOString(), note: note || `Status: ${status}` },
+                    ],
+                  }
+                : ord
+            )
+          );
+        }
+      };
+    }
+
+    // 3. Fallback StorageEvent
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'orders_v2' && e.newValue) {
         try {
@@ -325,7 +443,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+
+    return () => {
+      unsubscribeFirestore();
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // Loyalty points
@@ -599,12 +722,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     saveOrderToMyDevice(newId);
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== newId)]);
     clearCart();
     setActiveTrackingOrderId(newId);
     setOrderConfirmationOrder(newOrder);
     soundManager.playOrderSuccess();
     addToast(language === 'ar' ? 'تم تأكيد طلبك بنجاح!' : 'Order confirmed successfully!', 'success');
+
+    // 1. Instantly broadcast locally
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: newOrder }));
+      if ('BroadcastChannel' in window) {
+        try {
+          const bc = new BroadcastChannel('frank_burger_orders_channel');
+          bc.postMessage({ type: 'NEW_ORDER', order: newOrder });
+          bc.close();
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // 2. Persist to Firestore cloud database in real-time
+    try {
+      setDoc(doc(db, 'orders', newId), newOrder).catch((err) => {
+        handleFirestoreError(err, OperationType.CREATE, `orders/${newId}`);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, `orders/${newId}`);
+    }
 
     // Add loyalty points (1 point for every 10 EGP)
     const pointsEarned = Math.floor(newOrder.total / 10);
@@ -627,6 +773,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus, note?: string) => {
+    let updatedOrderObj: Order | undefined;
     setOrders((prev) =>
       prev.map((ord) => {
         if (ord.id === orderId) {
@@ -638,15 +785,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               note: note || (language === 'ar' ? `تم تغيير الحالة إلى ${status}` : `Status updated to ${status}`),
             },
           ];
-          return {
+          const updated = {
             ...ord,
             status,
             statusHistory: updatedHistory,
           };
+          updatedOrderObj = updated;
+          return updated;
         }
         return ord;
       })
     );
+
+    // Sync to Firestore
+    try {
+      if (updatedOrderObj) {
+        setDoc(doc(db, 'orders', orderId), updatedOrderObj, { merge: true }).catch((err) => {
+          handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+        });
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+    }
+
+    // Broadcast update
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        const bc = new BroadcastChannel('frank_burger_orders_channel');
+        bc.postMessage({ type: 'UPDATE_STATUS', orderId, status, note });
+        bc.close();
+      } catch {
+        // ignore
+      }
+    }
   };
 
   const cancelOrder = (orderId: string, reason?: string) => {
@@ -655,6 +826,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteOrder = (orderId: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    try {
+      deleteDoc(doc(db, 'orders', orderId)).catch((err) => {
+        handleFirestoreError(err, OperationType.DELETE, `orders/${orderId}`);
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `orders/${orderId}`);
+    }
     addToast(language === 'ar' ? 'تم حذف الطلب بنجاح' : 'Order deleted successfully', 'success');
   };
 

@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Restaurant order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderType": { "type": "string" },
+        "status": { "type": "string" },
+        "total": { "type": "number" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "deliveryFee": { "type": "number" },
+        "tax": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "orderDate": { "type": "string" }
+      },
+      "required": ["id", "status", "total", "paymentMethod", "orderDate"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "All customer and cashier orders"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles"
+    }
+  }
+}
