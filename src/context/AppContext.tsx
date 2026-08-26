@@ -131,6 +131,7 @@ export type AppView = 'home' | 'menu' | 'offers' | 'about' | 'branches' | 'track
 
 interface AppContextType {
   language: Language;
+  syncStatus: 'connecting' | 'synced' | 'error';
   toggleLanguage: () => void;
   t: (key: keyof typeof translations['ar'], params?: Record<string, string | number>) => string;
   currentView: AppView;
@@ -329,6 +330,7 @@ function saveToStorage<T>(key: string, data: T) {
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Language & Direction
   const [language, setLanguage] = useState<Language>(() => loadFromStorage<Language>('lang', 'ar'));
+  const [syncStatus, setSyncStatus] = useState<'connecting' | 'synced' | 'error'>('connecting');
   const [currentView, setCurrentView] = useState<AppView>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.toLowerCase();
@@ -438,12 +440,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Sync orders in real-time across ALL devices, tabs, and clients via Firestore
   useEffect(() => {
     // 1. Setup Firestore real-time listener for multi-device & cloud synchronization
+    console.log('[DASHBOARD] Starting orders listener');
+    setSyncStatus('connecting');
     const ordersCollectionRef = collection(db, 'orders');
     let isInitialLoad = true;
 
     const unsubscribeFirestore = onSnapshot(
       ordersCollectionRef,
       (snapshot) => {
+        console.log(`[DASHBOARD] Listener active - received snapshot update. Document count: ${snapshot.size}`);
+        setSyncStatus('synced');
         const firestoreOrders: Order[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as Order;
@@ -470,6 +476,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
               const addedOrder = { ...change.doc.data() as Order, id: change.doc.id };
+              console.log(`[DASHBOARD] New order received from Firestore. ID: ${addedOrder.id}`);
               // Only notify if we haven't processed this ID yet in this session
               if (addedOrder && addedOrder.id && !notifiedOrderIds.current.has(addedOrder.id)) {
                 notifiedOrderIds.current.add(addedOrder.id);
@@ -488,6 +495,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       },
       (error) => {
+        console.error(`[DASHBOARD ERROR] Firestore Listener Error: ${error.message}`);
+        setSyncStatus('error');
         handleFirestoreError(error, OperationType.GET, 'orders');
       }
     );
@@ -1102,8 +1111,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Orders Management
   const createOrder = async (orderData: Omit<Order, 'id' | 'orderDate' | 'statusHistory'>): Promise<Order> => {
+    console.log('[ORDER] Creating order starting...');
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const newId = `FB-${randomNum}`;
+    console.log(`[ORDER] Generated Order ID: ${newId}`);
     const now = new Date().toISOString();
 
     const newOrder: Order = {
@@ -1151,8 +1162,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // 2. Persist to Firestore cloud database in real-time
     try {
+      console.log(`[ORDER] Sending order ${newId} to backend/Firestore...`);
       await setDoc(doc(db, 'orders', newId), cleanOrder);
+      console.log(`[ORDER] Order created successfully in Firestore. ID: ${newId}`);
     } catch (err) {
+      console.error(`[ORDER ERROR] Failed to create order in Firestore: ${err}`);
       handleFirestoreError(err, OperationType.CREATE, `orders/${newId}`);
     }
 
@@ -2170,6 +2184,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider
       value={{
         language,
+        syncStatus,
         toggleLanguage,
         t,
         currentView,

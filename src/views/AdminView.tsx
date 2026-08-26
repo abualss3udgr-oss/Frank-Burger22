@@ -105,6 +105,7 @@ const AdminDashboard: React.FC = () => {
     closeShift,
     addShiftExpense,
     language,
+    syncStatus,
     addToast,
   } = useApp();
 
@@ -319,13 +320,13 @@ const AdminDashboard: React.FC = () => {
     }
   }, []);
 
-  const [syncStatus, setSyncStatus] = useState<'connecting' | 'synced' | 'error'>('connecting');
-
   // Listen for real-time order events dispatched across the app / tabs / Firestore
   useEffect(() => {
+    console.log('[DASHBOARD] Initializing AdminView listener');
     const handleNewOrderIncoming = (e: Event) => {
       const customEvt = e as CustomEvent<Order>;
       const newOrder = customEvt.detail;
+      console.log(`[DASHBOARD] Received frank_new_order_event for ID: ${newOrder?.id}`);
       if (isRestricted || soundEnabled) {
         soundManager.unlockAudio();
         soundManager.playNewOrderAlert();
@@ -350,9 +351,6 @@ const AdminDashboard: React.FC = () => {
     };
 
     window.addEventListener('frank_new_order_event', handleNewOrderIncoming);
-    
-    // Set status to synced since we're listening
-    setSyncStatus('synced');
     
     return () => window.removeEventListener('frank_new_order_event', handleNewOrderIncoming);
   }, [soundEnabled, isRestricted]);
