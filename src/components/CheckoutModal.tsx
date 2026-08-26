@@ -170,7 +170,7 @@ export const CheckoutModal: React.FC = () => {
       }
 
       // Submit order
-      createOrder({
+      await createOrder({
         customer: {
           name,
           phone,

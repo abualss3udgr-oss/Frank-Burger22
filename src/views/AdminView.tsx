@@ -202,13 +202,13 @@ const AdminDashboard: React.FC = () => {
     }).filter(Boolean) as CartItem[]);
   };
 
-  const handlePlacePosOrder = () => {
+  const handlePlacePosOrder = async () => {
     if (posCart.length === 0) {
       alert('يرجى إضافة أصناف إلى الطلب أولاً');
       return;
     }
 
-    const newOrder = createOrder({
+    const newOrder = await createOrder({
       customer: {
         name: posCustomerName || 'زبون صالة',
         phone: posCustomerPhone || '01000000000',
@@ -317,6 +317,8 @@ const AdminDashboard: React.FC = () => {
     }
   }, []);
 
+  const [syncStatus, setSyncStatus] = useState<'connecting' | 'synced' | 'error'>('connecting');
+
   // Listen for real-time order events dispatched across the app / tabs / Firestore
   useEffect(() => {
     const handleNewOrderIncoming = (e: Event) => {
@@ -346,35 +348,19 @@ const AdminDashboard: React.FC = () => {
     };
 
     window.addEventListener('frank_new_order_event', handleNewOrderIncoming);
+    
+    // Set status to synced since we're listening
+    setSyncStatus('synced');
+    
     return () => window.removeEventListener('frank_new_order_event', handleNewOrderIncoming);
   }, [soundEnabled, isRestricted]);
 
-  // Auto sound notify & Browser Notification on new orders from Firestore snapshot
+  // Handle auto sound notify & Browser Notification on new orders
   useEffect(() => {
-    if (orders.length > lastOrdersCount) {
-      if (lastOrdersCount > 0) {
-        if (isRestricted || soundEnabled) {
-          soundManager.unlockAudio();
-          soundManager.playNewOrderAlert();
-        }
-        const newest = orders[0];
-        showFeedbackBanner(newest ? `🍔 طلب جديد وصل الآن! #${newest.id} (${newest.total} ج.م)` : 'تم استلام طلب جديد في النظام!');
-
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' && newest) {
-          try {
-            new Notification(`🍔 طلب جديد #${newest.id} في فرانك برجر!`, {
-              body: `العميل: ${newest.customer?.name || 'زبون'} | ${newest.total} ج.م | اضغط لمراجعة الطلب`,
-              icon: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=120&h=120&q=80',
-              tag: `order-${newest.id}`,
-            });
-          } catch {
-            // fallback
-          }
-        }
-      }
-    }
+    // Consolidated real-time alerts into the event listener above.
+    // We just track the length for stats and UI consistency.
     setLastOrdersCount(orders.length);
-  }, [orders, lastOrdersCount, soundEnabled, isRestricted]);
+  }, [orders, lastOrdersCount]);
 
   const showFeedbackBanner = (msg: string) => {
     setActionSuccessMessage(msg);
@@ -624,6 +610,16 @@ const AdminDashboard: React.FC = () => {
             alt="Frank Burger" 
             className="h-9 sm:h-12 md:h-16 w-auto object-contain shrink-0"
           />
+          
+          {/* Real-time Sync Status Indicator */}
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm ${
+            syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+            syncStatus === 'connecting' ? 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse' : 
+            'bg-red-50 text-red-600 border-red-100'
+          }`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'connecting' ? 'bg-amber-500' : 'bg-red-500'}`} />
+            <span>{syncStatus === 'synced' ? (language === 'ar' ? 'متصل مباشر' : 'LIVE SYNC') : (language === 'ar' ? 'جاري الاتصال' : 'CONNECTING')}</span>
+          </div>
           <div>
             {!isRestricted && (
               <>

@@ -211,7 +211,7 @@ interface AppContextType {
   orders: Order[];
   myDeviceOrders: Order[];
   deviceInfo: DeviceInfo;
-  createOrder: (orderData: Omit<Order, 'id' | 'orderDate' | 'statusHistory'>) => Order;
+  createOrder: (orderData: Omit<Order, 'id' | 'orderDate' | 'statusHistory'>) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
   cancelOrder: (orderId: string, reason?: string) => void;
   deleteOrder: (orderId: string) => void;
@@ -436,6 +436,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     // 1. Setup Firestore real-time listener for multi-device & cloud synchronization
     const ordersCollectionRef = collection(db, 'orders');
+    let isInitialLoad = true;
+
     const unsubscribeFirestore = onSnapshot(
       ordersCollectionRef,
       (snapshot) => {
@@ -447,21 +449,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         });
 
-        if (firestoreOrders.length > 0) {
-          firestoreOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
-          setOrders(firestoreOrders);
-          saveToStorage('orders_v2', firestoreOrders);
-        }
+        // Sort: Newest first
+        firestoreOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+        
+        // Update state even if empty to ensure sync (clearing mock data if DB is empty)
+        setOrders(firestoreOrders);
+        saveToStorage('orders_v2', firestoreOrders);
 
-        // Detect newly added order docs in real-time
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            const addedOrder = change.doc.data() as Order;
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: addedOrder }));
+        // Detect actually NEW orders (not initial load)
+        if (!isInitialLoad) {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+              const addedOrder = change.doc.data() as Order;
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('frank_new_order_event', { detail: addedOrder }));
+              }
             }
-          }
-        });
+          });
+        }
+        
+        isInitialLoad = false;
       },
       (error) => {
         handleFirestoreError(error, OperationType.GET, 'orders');
@@ -1110,7 +1117,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [orders, deviceInfo.deviceId, myDeviceOrderIds]);
 
   // Orders Management
-  const createOrder = (orderData: Omit<Order, 'id' | 'orderDate' | 'statusHistory'>): Order => {
+  const createOrder = async (orderData: Omit<Order, 'id' | 'orderDate' | 'statusHistory'>): Promise<Order> => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const newId = `FB-${randomNum}`;
     const now = new Date().toISOString();
@@ -1160,9 +1167,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // 2. Persist to Firestore cloud database in real-time
     try {
-      setDoc(doc(db, 'orders', newId), newOrder).catch((err) => {
-        handleFirestoreError(err, OperationType.CREATE, `orders/${newId}`);
-      });
+      await setDoc(doc(db, 'orders', newId), newOrder);
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `orders/${newId}`);
     }
