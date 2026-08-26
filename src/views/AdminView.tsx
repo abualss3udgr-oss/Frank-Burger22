@@ -72,6 +72,7 @@ const AdminDashboard: React.FC = () => {
     setCurrentView,
     orders,
     updateOrderStatus,
+    deleteOrder,
     products,
     addProduct,
     updateProduct,
@@ -94,9 +95,11 @@ const AdminDashboard: React.FC = () => {
     setActiveReceiptOrder,
   } = useApp();
 
+  const isCashier = adminUser?.role === 'cashier';
+
   const [activeTab, setActiveTab] = useState<
     'overview' | 'orders' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings'
-  >(() => (adminUser?.role === 'cashier' ? 'orders' : 'overview'));
+  >(() => (isCashier ? 'orders' : 'overview'));
 
   // Search & Filter States
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
@@ -406,18 +409,26 @@ const AdminDashboard: React.FC = () => {
             className="h-12 sm:h-14 w-auto object-contain shrink-0"
           />
           <div>
-            <div className="flex items-center gap-2.5">
+            {isCashier ? (
               <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
-                لوحة تحكم وإدارة المطعم
+                كشير ومسئول الطلبات — Frank Burger
               </h1>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>مباشر متصل</span>
-              </div>
-            </div>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              نظام إدارة الطلبات الحية، المطبخ، نقاط البيع والمنيو — {settings.restaurantNameAr}
-            </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
+                    لوحة تحكم وإدارة المطعم
+                  </h1>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>مباشر متصل</span>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  نظام إدارة الطلبات الحية، المطبخ، نقاط البيع والمنيو — {settings.restaurantNameAr}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
@@ -458,48 +469,52 @@ const AdminDashboard: React.FC = () => {
             </span>
           </button>
 
-          {/* Direct Admin URL Link copy */}
-          <button
-            onClick={handleCopyAdminLink}
-            title="نسخ الرابط المباشر لصفحة الإدارة"
-            className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-xl px-3 py-2 text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            {copiedLink ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-emerald-700 font-bold text-[11px]">تم نسخ الرابط!</span>
-              </>
-            ) : (
-              <>
-                <LinkIcon className="w-3.5 h-3.5 text-zinc-500" />
-                <span dir="ltr" className="text-[11px] font-mono text-zinc-500 font-bold">/#admin</span>
-                <span className="text-[11px] text-zinc-700 font-semibold">نسخ</span>
-              </>
-            )}
-          </button>
+          {/* Direct Admin URL Link copy - Only for non-cashier */}
+          {!isCashier && (
+            <button
+              onClick={handleCopyAdminLink}
+              title="نسخ الرابط المباشر لصفحة الإدارة"
+              className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-xl px-3 py-2 text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-700 font-bold text-[11px]">تم نسخ الرابط!</span>
+                </>
+              ) : (
+                <>
+                  <LinkIcon className="w-3.5 h-3.5 text-zinc-500" />
+                  <span dir="ltr" className="text-[11px] font-mono text-zinc-500 font-bold">/#admin</span>
+                  <span className="text-[11px] text-zinc-700 font-semibold">نسخ</span>
+                </>
+              )}
+            </button>
+          )}
 
-          {/* Store Open / Closed Switch */}
-          <button
-            onClick={() => {
-              const newState = !settings.isStoreOpen;
-              updateSettings({ isStoreOpen: newState });
-              showFeedbackBanner(newState ? 'المطعم الآن يستقبل الطلبات' : 'تم إغلاق استقبال الطلبات مؤقتاً');
-            }}
-            className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm ${
-              settings.isStoreOpen
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                settings.isStoreOpen ? 'bg-emerald-500' : 'bg-rose-500'
+          {/* Store Open / Closed Switch - Only for non-cashier */}
+          {!isCashier && (
+            <button
+              onClick={() => {
+                const newState = !settings.isStoreOpen;
+                updateSettings({ isStoreOpen: newState });
+                showFeedbackBanner(newState ? 'المطعم الآن يستقبل الطلبات' : 'تم إغلاق استقبال الطلبات مؤقتاً');
+              }}
+              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm ${
+                settings.isStoreOpen
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
               }`}
-            />
-            <span>
-              {settings.isStoreOpen ? 'استقبال الطلبات: مفتوح' : 'المطعم: مغلق مؤقتاً'}
-            </span>
-          </button>
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  settings.isStoreOpen ? 'bg-emerald-500' : 'bg-rose-500'
+                }`}
+              />
+              <span>
+                {settings.isStoreOpen ? 'استقبال الطلبات: مفتوح' : 'المطعم: مغلق مؤقتاً'}
+              </span>
+            </button>
+          )}
 
           {/* View Customer Storefront */}
           <button
@@ -527,14 +542,15 @@ const AdminDashboard: React.FC = () => {
       </header>
 
       {/* Main Dashboard Layout with Sidebar & Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Sidebar Navigation */}
-        <aside className="lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4 sticky top-6">
-          <div className="px-3 py-2 border-b border-zinc-100">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-              قائمة التنقل السريع
-            </span>
-          </div>
+      <div className={isCashier ? 'w-full space-y-6' : 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'}>
+        {/* Sidebar Navigation - Only if not cashier */}
+        {!isCashier && (
+          <aside className="lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4 sticky top-6">
+            <div className="px-3 py-2 border-b border-zinc-100">
+              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                قائمة التنقل السريع
+              </span>
+            </div>
 
           <nav className="space-y-1.5">
             {/* Overview - Manager Only */}
@@ -712,9 +728,10 @@ const AdminDashboard: React.FC = () => {
             </p>
           </div>
         </aside>
+        )}
 
         {/* Main Content Area */}
-        <main className="lg:col-span-9 space-y-6">
+        <main className={isCashier ? 'w-full space-y-6' : 'lg:col-span-9 space-y-6'}>
 
       {/* ========================================================================= */}
       {/* TAB 1: OVERVIEW & PERFORMANCE STATS */}
@@ -1379,6 +1396,20 @@ const AdminDashboard: React.FC = () => {
                             إلغاء
                           </button>
                         )}
+
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`هل أنت متأكد من رغبتك في حذف الطلب #${order.id} نهائياً؟`)) {
+                              deleteOrder(order.id);
+                              showFeedbackBanner(`تم حذف الطلب #${order.id}`);
+                            }
+                          }}
+                          className="px-2.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                          title="حذف الطلب"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>حذف</span>
+                        </button>
                       </div>
                     </div>
                   </div>

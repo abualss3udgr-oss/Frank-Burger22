@@ -153,6 +153,12 @@ export const translations = {
     driverAssigned: 'كابتن التوصيل المعين:',
     estimatedArrival: 'الوقت المتبقي المقدر:',
     callBranch: 'اتصال بالفرع',
+    rateOrderTitle: 'تقييم الخدمة وتجربة الوجبة ⭐',
+    rateOrderSubtitle: 'تم تسليم طلبك بنجاح! شاركنا رأيك لمساعدتنا على تقديم الأفضل دائماً.',
+    submitRatingBtn: 'إرسال التقييم الآن',
+    ratingSubmittedTitle: 'تم استلام تقييمك بنجاح ❤️',
+    ratingSubmittedSubtitle: 'شكراً لمشاركتنا رأيك، نسعى دائماً لتقديم أعلى جودة ولذة لعملائنا!',
+    ratePlaceholder: 'اكتب ملاحظاتك أو تعليقك حول جودة الطعام وسرعة التوصيل (اختياري)...',
 
     // Profile & Reorder
     profileTitle: 'الملف الشخصي والطلبات السابقة',
@@ -378,6 +384,12 @@ export const translations = {
     driverAssigned: 'Assigned Driver:',
     estimatedArrival: 'Estimated Remaining Time:',
     callBranch: 'Call Branch',
+    rateOrderTitle: 'Rate Your Meal & Service Experience ⭐',
+    rateOrderSubtitle: 'Your order was successfully delivered! Share your feedback with us.',
+    submitRatingBtn: 'Submit Feedback Now',
+    ratingSubmittedTitle: 'Feedback Received Successfully ❤️',
+    ratingSubmittedSubtitle: 'Thank you for your review, we always strive to provide you with the best burgers!',
+    ratePlaceholder: 'Write your notes or feedback about food quality and delivery (optional)...',
 
     // Profile & Reorder
     profileTitle: 'Customer Profile & Orders',

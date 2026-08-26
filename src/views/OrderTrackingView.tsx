@@ -13,6 +13,12 @@ import {
   ShoppingBag,
   RotateCcw,
   AlertCircle,
+  Star,
+  Sparkles,
+  Send,
+  ThumbsUp,
+  Edit3,
+  Heart,
 } from 'lucide-react';
 
 export const OrderTrackingView: React.FC = () => {
@@ -23,6 +29,10 @@ export const OrderTrackingView: React.FC = () => {
     trackOrderLookup,
     setActiveReceiptOrder,
     reorderPastOrder,
+    addReview,
+    updateProductRating,
+    addToast,
+    customerProfile,
     language,
     t,
     branches,
@@ -32,6 +42,19 @@ export const OrderTrackingView: React.FC = () => {
   const [inputPhone, setInputPhone] = useState('');
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [lookupError, setLookupError] = useState(false);
+
+  // Review & Rating State for Delivered Order
+  const [rating, setRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [comment, setComment] = useState<string>('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [submittedFeedback, setSubmittedFeedback] = useState<{
+    rating: number;
+    comment: string;
+    tags: string[];
+    date: string;
+  } | null>(null);
+  const [isEditingFeedback, setIsEditingFeedback] = useState<boolean>(false);
 
   // Load tracking order from active state or latest order
   useEffect(() => {
@@ -52,6 +75,32 @@ export const OrderTrackingView: React.FC = () => {
     }
   }, [activeTrackingOrderId, orders]);
 
+  // Load existing feedback for active order if previously submitted
+  useEffect(() => {
+    if (!activeOrder) return;
+    try {
+      const saved = localStorage.getItem('frank_burger_rated_orders');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed[activeOrder.id]) {
+          setSubmittedFeedback(parsed[activeOrder.id]);
+          setRating(parsed[activeOrder.id].rating || 5);
+          setComment(parsed[activeOrder.id].comment || '');
+          setSelectedTags(parsed[activeOrder.id].tags || []);
+          setIsEditingFeedback(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setSubmittedFeedback(null);
+    setRating(5);
+    setComment('');
+    setSelectedTags([]);
+    setIsEditingFeedback(false);
+  }, [activeOrder?.id]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setLookupError(false);
@@ -66,6 +115,110 @@ export const OrderTrackingView: React.FC = () => {
     } else {
       setLookupError(true);
     }
+  };
+
+  // Feedback tags choices
+  const feedbackTags = language === 'ar' ? [
+    { id: 't1', label: '🍔 طعام ساخن ولذيذ' },
+    { id: 't2', label: '⚡ سرعة فائقة في التوصيل' },
+    { id: 't3', label: '🛵 كابتن مهذب ومحترم' },
+    { id: 't4', label: '📦 تغليف محكم ونظيف' },
+    { id: 't5', label: '🍟 مقرمش وصوصات وافرة' },
+    { id: 't6', label: '🥩 جودة اللحم ممتازة' },
+  ] : [
+    { id: 't1', label: '🍔 Hot & Delicious Food' },
+    { id: 't2', label: '⚡ Super Fast Delivery' },
+    { id: 't3', label: '🛵 Polite & Courteous Driver' },
+    { id: 't4', label: '📦 Clean & Secure Packaging' },
+    { id: 't5', label: '🍟 Crispy Fries & Fresh Sauces' },
+    { id: 't6', label: '🥩 Fresh Premium Beef' },
+  ];
+
+  const toggleTag = (tagLabel: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagLabel) ? prev.filter((t) => t !== tagLabel) : [...prev, tagLabel]
+    );
+  };
+
+  const getRatingLabel = (score: number) => {
+    if (language === 'ar') {
+      switch (score) {
+        case 5:
+          return '🌟 ممتاز جداً ولذيذ للغاية!';
+        case 4:
+          return '👍 جيد جداً وتجربة ممتعة';
+        case 3:
+          return '👌 جيد وتجربة مقبولة';
+        case 2:
+          return '⚠️ يحتاج بعض التحسينات';
+        case 1:
+          return '❌ تجربة لم تكن مرضية';
+        default:
+          return 'اختر التقييم المناسب';
+      }
+    } else {
+      switch (score) {
+        case 5:
+          return '🌟 Excellent & Super Delicious!';
+        case 4:
+          return '👍 Very Good & Enjoyable Experience';
+        case 3:
+          return '👌 Good & Acceptable';
+        case 2:
+          return '⚠️ Needs Some Improvements';
+        case 1:
+          return '❌ Unsatisfactory Experience';
+        default:
+          return 'Select your rating';
+      }
+    }
+  };
+
+  const handleSubmitFeedback = () => {
+    if (!activeOrder) return;
+    const tagsSummary = selectedTags.length > 0 ? selectedTags.join(' • ') : '';
+    const fullComment = [tagsSummary, comment.trim()].filter(Boolean).join(' | ');
+
+    addReview({
+      customerName:
+        activeOrder.customer.name ||
+        customerProfile?.name ||
+        (language === 'ar' ? 'عميل فرانك برجر' : 'Frank Burger Guest'),
+      rating,
+      commentAr: fullComment || (language === 'ar' ? 'خدمة وجودة ممتازة!' : 'Great food and delivery!'),
+      commentEn: fullComment || 'Great food and delivery!',
+      isApproved: true,
+    });
+
+    // Update rating on each product in the order
+    activeOrder.items.forEach((item) => {
+      updateProductRating(item.product.id, rating);
+    });
+
+    const feedbackData = {
+      rating,
+      comment: comment.trim(),
+      tags: selectedTags,
+      date: new Date().toISOString(),
+    };
+
+    try {
+      const existing = localStorage.getItem('frank_burger_rated_orders');
+      const parsed = existing ? JSON.parse(existing) : {};
+      parsed[activeOrder.id] = feedbackData;
+      localStorage.setItem('frank_burger_rated_orders', JSON.stringify(parsed));
+    } catch (e) {
+      console.error(e);
+    }
+
+    setSubmittedFeedback(feedbackData);
+    setIsEditingFeedback(false);
+    addToast(
+      language === 'ar'
+        ? 'شكراً جزيلاً لتقييمك! نسعد دائماً بخدمتك وتقديم ألذ برجر لك ❤️'
+        : 'Thank you for your rating! We always strive to serve you the best ❤️',
+      'success'
+    );
   };
 
   // Timeline steps config
@@ -118,6 +271,8 @@ export const OrderTrackingView: React.FC = () => {
     nameEn: 'Main Branch (Assiut)',
     phone: '01091266737',
   };
+
+  const displayRating = hoverRating !== null ? hoverRating : rating;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -318,6 +473,194 @@ export const OrderTrackingView: React.FC = () => {
             </div>
           )}
 
+          {/* ========================================================================= */}
+          {/* AUTOMATIC SERVICE & MEAL EVALUATION CARD UPON ORDER DELIVERY */}
+          {/* ========================================================================= */}
+          {activeOrder.status === 'delivered' && (
+            <div className="bg-gradient-to-br from-amber-500/[0.07] via-rose-500/[0.04] to-zinc-50 border-2 border-amber-300/80 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm transition-all duration-300">
+              {submittedFeedback && !isEditingFeedback ? (
+                /* Submitted State Display */
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200/60">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
+                        <Heart className="w-5 h-5 fill-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
+                          <span>{t('ratingSubmittedTitle')}</span>
+                          <Sparkles className="w-4 h-4 text-amber-500" />
+                        </h3>
+                        <p className="text-xs text-zinc-600 mt-0.5">
+                          {t('ratingSubmittedSubtitle')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setIsEditingFeedback(true)}
+                      className="self-start sm:self-center px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>{language === 'ar' ? 'تعديل التقييم' : 'Edit Review'}</span>
+                    </button>
+                  </div>
+
+                  {/* Summary of User's Feedback */}
+                  <div className="bg-white/80 border border-amber-100 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-1 text-amber-500">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-5 h-5 ${
+                              submittedFeedback.rating >= star
+                                ? 'fill-amber-400 text-amber-500'
+                                : 'text-zinc-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs font-bold text-zinc-800">
+                        {getRatingLabel(submittedFeedback.rating)}
+                      </span>
+                    </div>
+
+                    {submittedFeedback.tags && submittedFeedback.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {submittedFeedback.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {submittedFeedback.comment && (
+                      <p className="text-xs text-zinc-700 bg-zinc-50 p-2.5 rounded-lg border border-zinc-100 italic">
+                        "{submittedFeedback.comment}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Interactive Feedback Form */
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#E51E2A] text-white flex items-center justify-center shadow-md shadow-[#E51E2A]/20 shrink-0">
+                      <Sparkles className="w-5 h-5 text-amber-300" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-black text-zinc-900 font-heading flex items-center gap-1.5">
+                        <span>{t('rateOrderTitle')}</span>
+                      </h3>
+                      <p className="text-xs text-zinc-600 mt-0.5">
+                        {t('rateOrderSubtitle')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Star Selection with Live Feedback */}
+                  <div className="bg-white/90 border border-amber-200/60 rounded-xl p-4 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setRating(star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(null)}
+                            className="p-1 hover:scale-125 transition-transform cursor-pointer"
+                            title={`${star} stars`}
+                          >
+                            <Star
+                              className={`w-7 h-7 sm:w-8 sm:h-8 transition-colors ${
+                                displayRating >= star
+                                  ? 'fill-amber-400 text-amber-500 drop-shadow-xs'
+                                  : 'text-zinc-300 hover:text-amber-200'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="text-xs font-bold text-[#E51E2A] bg-rose-50 border border-rose-100 px-3 py-1 rounded-full">
+                        {getRatingLabel(displayRating)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Highlight Tags */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-zinc-700">
+                      {language === 'ar' ? 'ما أكثر شيء نال إعجابك في الطلب؟' : 'What did you like most?'}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {feedbackTags.map((tag) => {
+                        const isSelected = selectedTags.includes(tag.label);
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.label)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-amber-500 text-zinc-950 shadow-xs border border-amber-600 font-bold scale-[1.02]'
+                                : 'bg-white text-zinc-700 border border-zinc-200 hover:border-amber-400 hover:bg-amber-50/50'
+                            }`}
+                          >
+                            {isSelected && <ThumbsUp className="w-3 h-3 text-zinc-950" />}
+                            <span>{tag.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Written Comment / Feedback */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-bold text-zinc-700">
+                      {language === 'ar' ? 'تعليقك أو أي ملاحظات إضافية:' : 'Your comment or extra notes:'}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder={t('ratePlaceholder')}
+                      className="w-full bg-white border border-zinc-200 rounded-xl p-3 text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-[#E51E2A] focus:ring-1 focus:ring-[#E51E2A] resize-none"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    {submittedFeedback && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingFeedback(false)}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 hover:bg-zinc-200/60 transition-colors cursor-pointer"
+                      >
+                        {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleSubmitFeedback}
+                      className="px-6 py-2.5 rounded-xl bg-[#E51E2A] hover:bg-[#c81520] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#E51E2A]/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{t('submitRatingBtn')}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Status History Logs */}
           <div className="space-y-2 pt-4 border-t border-zinc-100">
             <h3 className="text-xs font-semibold text-zinc-500">
@@ -395,4 +738,5 @@ export const OrderTrackingView: React.FC = () => {
     </div>
   );
 };
+
 

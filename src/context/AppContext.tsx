@@ -49,152 +49,8 @@ import {
   saveOrderToMyDevice,
 } from '../utils/device';
 
-// Realistic starter orders for the restaurant
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: 'FB-9104',
-    customer: {
-      name: 'كريم عادل',
-      phone: '01012345678',
-      whatsapp: '01012345678',
-      addressStreet: 'شارع الجمهورية، عمارة 14',
-      addressBuilding: 'الدور الثالث - شقة 6',
-      addressNotes: 'رن الجرس مرتين',
-      deliveryZoneId: 'zone-downtown',
-    },
-    items: [
-      {
-        cartItemId: 'init-1',
-        productId: 'frank-signature',
-        product: INITIAL_PRODUCTS[0],
-        selectedSize: INITIAL_PRODUCTS[0].availableSizes?.[1],
-        selectedAddons: [
-          {
-            groupId: 'cheese-addons',
-            groupTitleAr: 'إضافات الجبن',
-            groupTitleEn: 'Cheese Add-ons',
-            optionId: 'cheese-sauce-cup',
-            nameAr: 'كوب جبنة شيدر سائلة',
-            nameEn: 'Warm Melted Cheddar Cup',
-            price: 30,
-          },
-        ],
-        quantity: 2,
-        unitPrice: 195,
-        totalPrice: 390,
-      },
-      {
-        cartItemId: 'init-2',
-        productId: 'frank-loaded-fries',
-        product: INITIAL_PRODUCTS[8],
-        selectedAddons: [],
-        quantity: 1,
-        unitPrice: 95,
-        totalPrice: 95,
-      },
-    ],
-    orderType: 'delivery',
-    status: 'preparing',
-    paymentMethod: 'cash_on_delivery',
-    paymentStatus: 'pending',
-    subtotal: 485,
-    discount: 0,
-    deliveryFee: 20,
-    tax: 0,
-    total: 505,
-    orderDate: new Date(Date.now() - 15 * 60000).toISOString(),
-    estimatedDeliveryTime: '30-40 دقيقة',
-    statusHistory: [
-      { status: 'pending', timestamp: new Date(Date.now() - 15 * 60000).toISOString() },
-      { status: 'confirmed', timestamp: new Date(Date.now() - 12 * 60000).toISOString() },
-      { status: 'preparing', timestamp: new Date(Date.now() - 5 * 60000).toISOString(), note: 'على الجريل الآن' },
-    ],
-  },
-  {
-    id: 'FB-9103',
-    customer: {
-      name: 'نورهان السعيد',
-      phone: '01198765432',
-      pickupBranchId: 'branch-assiut-feryal',
-    },
-    items: [
-      {
-        cartItemId: 'init-3',
-        productId: 'frank-crispy-chicken',
-        product: INITIAL_PRODUCTS[4],
-        selectedAddons: [],
-        quantity: 1,
-        unitPrice: 145,
-        totalPrice: 145,
-      },
-      {
-        cartItemId: 'init-4',
-        productId: 'salted-caramel-shake',
-        product: INITIAL_PRODUCTS[14],
-        selectedAddons: [],
-        quantity: 1,
-        unitPrice: 65,
-        totalPrice: 65,
-      },
-    ],
-    orderType: 'pickup',
-    status: 'ready',
-    paymentMethod: 'card_on_delivery',
-    paymentStatus: 'pending',
-    subtotal: 210,
-    discount: 20,
-    deliveryFee: 0,
-    tax: 0,
-    total: 190,
-    couponCode: 'WELCOME15',
-    orderDate: new Date(Date.now() - 35 * 60000).toISOString(),
-    estimatedDeliveryTime: 'جاهز للاستلام',
-    statusHistory: [
-      { status: 'pending', timestamp: new Date(Date.now() - 35 * 60000).toISOString() },
-      { status: 'confirmed', timestamp: new Date(Date.now() - 30 * 60000).toISOString() },
-      { status: 'preparing', timestamp: new Date(Date.now() - 25 * 60000).toISOString() },
-      { status: 'ready', timestamp: new Date(Date.now() - 8 * 60000).toISOString(), note: 'جاهز بالفرع' },
-    ],
-  },
-  {
-    id: 'FB-9102',
-    customer: {
-      name: 'محمود عبد الرازق',
-      phone: '01234567890',
-      addressStreet: 'شارع الجامعة، بجوار كلية التجارة',
-      deliveryZoneId: 'zone-university',
-    },
-    items: [
-      {
-        cartItemId: 'init-5',
-        productId: 'duo-box-meal',
-        product: INITIAL_PRODUCTS[6],
-        selectedAddons: [],
-        quantity: 1,
-        unitPrice: 349,
-        totalPrice: 349,
-      },
-    ],
-    orderType: 'delivery',
-    status: 'out_for_delivery',
-    paymentMethod: 'vodafone_cash_instapay',
-    paymentStatus: 'paid',
-    subtotal: 349,
-    discount: 0,
-    deliveryFee: 25,
-    tax: 0,
-    total: 374,
-    orderDate: new Date(Date.now() - 50 * 60000).toISOString(),
-    estimatedDeliveryTime: 'خلال 10 دقائق',
-    statusHistory: [
-      { status: 'pending', timestamp: new Date(Date.now() - 50 * 60000).toISOString() },
-      { status: 'confirmed', timestamp: new Date(Date.now() - 45 * 60000).toISOString() },
-      { status: 'preparing', timestamp: new Date(Date.now() - 35 * 60000).toISOString() },
-      { status: 'ready', timestamp: new Date(Date.now() - 20 * 60000).toISOString() },
-      { status: 'out_for_delivery', timestamp: new Date(Date.now() - 10 * 60000).toISOString(), note: 'مع الكابتن مصطفى' },
-    ],
-  },
-];
+// Zero initial orders so real orders show up cleanly
+const INITIAL_ORDERS: Order[] = [];
 
 export type AppView = 'home' | 'menu' | 'offers' | 'about' | 'branches' | 'tracking' | 'profile' | 'admin';
 
@@ -285,6 +141,7 @@ interface AppContextType {
   createOrder: (orderData: Omit<Order, 'id' | 'orderDate' | 'statusHistory'>) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
   cancelOrder: (orderId: string, reason?: string) => void;
+  deleteOrder: (orderId: string) => void;
   activeTrackingOrderId: string | null;
   setActiveTrackingOrderId: (id: string | null) => void;
   trackOrderLookup: (orderNumber: string, phone: string) => Order | null;
@@ -777,6 +634,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateOrderStatus(orderId, 'cancelled', reason || (language === 'ar' ? 'تم إلغاء الطلب' : 'Order was cancelled'));
   };
 
+  const deleteOrder = (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    addToast(language === 'ar' ? 'تم حذف الطلب بنجاح' : 'Order deleted successfully', 'success');
+  };
+
   const trackOrderLookup = (orderNumber: string, phone: string): Order | null => {
     const cleanNum = orderNumber.trim().toUpperCase();
     const cleanPhone = phone.trim();
@@ -1180,6 +1042,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createOrder,
         updateOrderStatus,
         cancelOrder,
+        deleteOrder,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
         trackOrderLookup,

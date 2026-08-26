@@ -1235,6 +1235,9 @@ export const INITIAL_SETTINGS: RestaurantSettings = {
   socialTiktok: 'https://tiktok.com',
   rushHourMode: false,
   estimatedPreparationTimeMinutes: 25,
+  facebookPixelId: '',
+  tiktokPixelId: '',
+  googleAnalyticsId: '',
 };
 
 export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
