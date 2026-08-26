@@ -21,9 +21,9 @@ export const translations = {
     searchPlaceholder: 'ابحث عن برجر، بيتزا، وجبات، كريب، مكرونة، صوص...',
     
     // Hero
-    heroTitlePart1: 'طعم تحبه من',
-    heroTitlePart2: 'أول قطمة في فرانك',
-    heroDesc: 'تشكيلة متكاملة من ألذ برجر سماش، فرايد تشيكن كرانشي، بيتزا، وجبات فاخرة، كريب، ومكرونة وايت صوص تحضر طازجة يومياً بأعلى جودة.',
+    heroTitlePart1: 'البرجر اللي',
+    heroTitlePart2: 'بتشتهيه.',
+    heroDesc: 'مكونات طازجة، برجر مليان عصارة، ونكهات قوية — متحضرة على ذوقك.',
     heroOrderNow: 'اطلب دلوقتي 🔥',
     heroViewMenu: 'استكشف المنيو الكامل',
     heroBadge1: 'مكونات 100% طازجة',
@@ -252,9 +252,9 @@ export const translations = {
     searchPlaceholder: 'Search burgers, chicken, fries, dips...',
 
     // Hero
-    heroTitlePart1: 'Craving a',
-    heroTitlePart2: 'Real Bold Burger?',
-    heroDesc: '100% fresh Angus beef smash-grilled to juicy perfection, daily fresh-baked brioche buns, and irresistible Frank signature sauces.',
+    heroTitlePart1: 'The Burger',
+    heroTitlePart2: 'You Crave.',
+    heroDesc: 'Fresh ingredients, juicy burgers, and bold flavors — made your way.',
     heroOrderNow: 'Order Now 🔥',
     heroViewMenu: 'Explore Full Menu',
     heroBadge1: '100% Fresh Angus Beef',

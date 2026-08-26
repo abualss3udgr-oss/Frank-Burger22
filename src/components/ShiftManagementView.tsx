@@ -214,6 +214,24 @@ export const ShiftManagementView: React.FC = () => {
           <div className="flex items-center gap-2.5 flex-wrap">
             {activeShift ? (
               <>
+                {!isSuperAdmin && (
+                  <>
+                    <button
+                      onClick={() => setIsExpenseModalOpen(true)}
+                      className="px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <TrendingDown className="w-4 h-4" />
+                      <span>سحب مبلغ / مصروف</span>
+                    </button>
+                    <button
+                      onClick={handleStartCloseShift}
+                      className="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>تقفيل الوردية للتسليم</span>
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => setViewingShiftReport(activeShift)}
                   className="px-3.5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -360,13 +378,15 @@ export const ShiftManagementView: React.FC = () => {
               لبدء تسجيل الطلبات وحساب مبيعات اليوم واستلام عهدة الدرج، يرجى فتح وردية جديدة وتحديد اسم الكاشير ومبلغ العهدة.
             </p>
           </div>
-          <button
-            onClick={handleStartOpenShift}
-            className="px-6 py-3 rounded-2xl bg-[#E51E2A] hover:bg-[#c01823] text-white text-xs font-black inline-flex items-center gap-2 transition-colors cursor-pointer shadow-lg shadow-[#E51E2A]/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>فتح وردية جديدة الآن</span>
-          </button>
+          {!isSuperAdmin && (
+            <button
+              onClick={handleStartOpenShift}
+              className="px-6 py-3 rounded-2xl bg-[#E51E2A] hover:bg-[#c01823] text-white text-xs font-black inline-flex items-center gap-2 transition-colors cursor-pointer shadow-lg shadow-[#E51E2A]/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>فتح وردية جديدة الآن</span>
+            </button>
+          )}
         </div>
       )}
 

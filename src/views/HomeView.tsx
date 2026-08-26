@@ -9,11 +9,20 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
+  Utensils,
+  ChefHat,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 import { Testimonials } from '../components/Testimonials';
 
 export const HomeView: React.FC = () => {
+  const [showIntro, setShowIntro] = React.useState(true);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setShowIntro(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const {
     products,
     categories,
@@ -30,88 +39,83 @@ export const HomeView: React.FC = () => {
 
   return (
     <div className="space-y-16 sm:space-y-20 pb-16">
-      {/* 1. HERO SECTION */}
-      <section className="border-b border-zinc-200 bg-white py-10 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left/Start Column */}
-            <div className="lg:col-span-7 space-y-6 text-start">
-              <div className="inline-block px-3 py-1 rounded bg-[#E51E2A]/10 text-[#E51E2A] text-xs font-bold uppercase tracking-wider">
-                {language === 'ar' ? 'أقوى برجر مشوي في المدينة' : '#1 Gourmet Smash Burger'}
-              </div>
+      <AnimatePresence>
+        {showIntro && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#FEF8F2]"
+          >
+            <motion.img
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png"
+              alt="Logo"
+              className="w-32 h-32"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-              <h1 className="text-3xl sm:text-5xl xl:text-6xl font-black text-zinc-900 leading-[1.1] font-heading">
-                {t('heroTitlePart1')}{' '}
-                <span className="text-[#E51E2A]">
-                  {t('heroTitlePart2')}
-                </span>
-              </h1>
-
-              <p className="text-sm sm:text-base text-zinc-600 max-w-xl leading-relaxed">
-                {t('heroDesc')}
-              </p>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-3 pt-2">
-                <button
-                  onClick={() => { setActiveMenuCategory('all'); setActiveMenuCategory('all'); setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  className="px-6 sm:px-8 py-3 rounded-lg bg-[#E51E2A] hover:bg-[#c81520] text-white font-bold text-sm sm:text-base transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  <span>{t('heroOrderNow')}</span>
-                  {language === 'ar' ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-                </button>
-
-                <button
-                  onClick={() => { setActiveMenuCategory('all'); setActiveMenuCategory('all'); setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  className="px-5 sm:px-6 py-3 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-black border border-zinc-200 font-semibold text-sm transition-colors cursor-pointer"
-                >
-                  {t('heroViewMenu')}
-                </button>
-              </div>
-
-              {/* Trust Badges Bar */}
-              <div className="pt-6 border-t border-zinc-200 grid grid-cols-3 gap-3 text-zinc-500 text-xs">
-                <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-[#E51E2A] shrink-0" />
-                  <span className="font-medium text-zinc-700">{t('heroBadge1')}</span>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+        {/* 1. HERO SECTION */}
+        <section className="relative overflow-hidden bg-[#FEF8F2] py-24 sm:py-32">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="space-y-6 text-start"
+              >
+                <h1 className="text-5xl sm:text-7xl font-black text-zinc-900 leading-[1.05] font-heading">
+                  {t('heroTitlePart1')} <br/>
+                  <span className="text-[#E51E2A]">{t('heroTitlePart2')}</span>
+                </h1>
+                <p className="text-zinc-600 max-w-md text-lg leading-relaxed">
+                  {t('heroDesc')}
+                </p>
+                
+                <div className="flex flex-wrap gap-4 pt-4">
+                  <button
+                    onClick={() => { setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="px-8 py-4 rounded-full bg-[#E51E2A] hover:bg-[#c81520] text-white font-bold transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                  >
+                    {t('heroOrderNow')}
+                  </button>
+                  <button
+                    onClick={() => { setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="px-8 py-4 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 font-bold border border-zinc-200 transition-all transform hover:scale-105 active:scale-95"
+                  >
+                    {t('heroViewMenu')}
+                  </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-[#E51E2A] shrink-0" />
-                  <span className="font-medium text-zinc-700">{t('heroBadge2')}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#E51E2A] shrink-0" />
-                  <span className="font-medium text-zinc-700">{t('heroBadge3')}</span>
-                </div>
-              </div>
-            </div>
+              </motion.div>
 
-            {/* Right/End Column: Food Photography */}
-            <div className="lg:col-span-5 relative flex justify-center">
-              <div className="relative w-full max-w-md aspect-square rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-50">
-                <img
-                  src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1000&q=85"
-                  alt="Frank Signature Burger"
-                  className="w-full h-full object-cover"
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.7, delay: 0.5 }}
+                className="relative flex justify-center items-center"
+              >
+                <div className="w-[350px] h-[350px] sm:w-[500px] sm:h-[500px] rounded-full bg-[#E51E2A]/10 absolute" />
+                <img 
+                  src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=800&q=80" 
+                  alt="Delicious Burger" 
+                  className="relative z-10 w-[300px] sm:w-[450px] rounded-full object-cover aspect-square shadow-2xl border-4 border-white"
                 />
-
-                <div className="absolute top-3 right-3 rtl:right-auto rtl:left-3 bg-white/90 border border-zinc-200 px-3 py-2 rounded-lg text-start">
-                  <div className="text-[10px] text-zinc-500 uppercase font-semibold">{t('badgeBestSeller')}</div>
-                  <div className="text-xs font-bold text-zinc-900 font-heading">FRANK SIGNATURE</div>
-                  <div className="text-xs font-mono font-bold text-[#E51E2A]">165 {t('currency')}</div>
-                </div>
-
-                <div className="absolute bottom-3 left-3 rtl:left-auto rtl:right-3 bg-white/90 border border-zinc-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-xs font-medium text-zinc-900">
-                    {language === 'ar' ? 'مشوي طازج عند الطلب' : 'Fresh Angus Smash'}
-                  </span>
-                </div>
-              </div>
+                
+                {/* Floating Elements */}
+                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="absolute top-10 left-10 p-4 bg-white rounded-full shadow-lg"><Utensils className="w-6 h-6 text-[#E51E2A]"/></motion.div>
+                <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-10 right-10 p-4 bg-white rounded-full shadow-lg"><ChefHat className="w-6 h-6 text-amber-500"/></motion.div>
+                <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} className="absolute top-20 right-5 p-3 bg-white rounded-full shadow-lg text-xs font-bold text-zinc-800">100% Fresh</motion.div>
+              </motion.div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </motion.div>
 
       {/* 2. CATEGORIES SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

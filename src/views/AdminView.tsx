@@ -662,8 +662,31 @@ const AdminDashboard: React.FC = () => {
 
 
 
-
-          {/* Logout Button */}
+          {/* Active Shift Status Pill - Cashier Only */}
+          {adminUser?.role === 'cashier' && (
+            <button
+              onClick={() => setActiveTab('shifts')}
+              title="إدارة الوردية وتسليم الكاشير"
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm border ${
+                activeShift
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+              }`}
+            >
+              {activeShift ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                  <Unlock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="text-[11px]">وردية: {activeShift.cashierName}</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="text-[11px]">فتح وردية كاشير</span>
+                </>
+              )}
+            </button>
+          )}
           <button
             onClick={logoutAdmin}
             title="تسجيل الخروج من لوحة التحكم"
@@ -686,39 +709,83 @@ const AdminDashboard: React.FC = () => {
               </span>
             </div>
 
-          <nav className="space-y-1.5">
+                    <nav className="space-y-1.5">
 
+            {/* Overview - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
+                  activeTab === 'overview'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  <span>الرئيسية والإحصائيات</span>
+                </div>
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'overview' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+              </button>
+            )}
 
-            {/* Shifts & Cashier Handover - Available for All */}
-            <button
-              onClick={() => setActiveTab('shifts')}
-              className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
-                activeTab === 'shifts'
-                  ? 'bg-[#E51E2A] text-white shadow-md'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Receipt className="w-4 h-4 shrink-0" />
-                <span>ورديات الكاشير</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {activeShift ? (
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'shifts' ? 'bg-white text-emerald-700' : 'bg-emerald-100 text-emerald-800'
-                  }`}>
-                    مفتوحة
-                  </span>
-                ) : (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                    activeTab === 'shifts' ? 'bg-white/20 text-zinc-900' : 'bg-zinc-200 text-zinc-600'
-                  }`}>
-                    مغلقة
-                  </span>
-                )}
-                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'shifts' ? 'text-zinc-900' : 'text-zinc-500'}`} />
-              </div>
-            </button>
+            {/* Orders Management - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
+                  activeTab === 'orders'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <ShoppingBag className="w-4 h-4 shrink-0" />
+                  <span>إدارة الطلبات الحية</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {pendingOrdersCount > 0 && (
+                    <span className="bg-[#E51E2A] text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-sm shadow-[#E51E2A]/20">
+                      {pendingOrdersCount}
+                    </span>
+                  )}
+                  <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'orders' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+                </div>
+              </button>
+            )}
+
+            {/* Shifts - Super Admin Only (View Reports) */}
+            {adminUser?.role === 'super_admin' && (
+              <button
+                onClick={() => setActiveTab('shifts')}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
+                  activeTab === 'shifts'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Receipt className="w-4 h-4 shrink-0" />
+                  <span>تقارير الورديات</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {activeShift ? (
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      activeTab === 'shifts' ? 'bg-white text-emerald-700' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      نشطة
+                    </span>
+                  ) : (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                      activeTab === 'shifts' ? 'bg-white/20 text-zinc-900' : 'bg-zinc-200 text-zinc-600'
+                    }`}>
+                      مغلقة
+                    </span>
+                  )}
+                  <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'shifts' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+                </div>
+              </button>
+            )}
 
             {/* Products - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
