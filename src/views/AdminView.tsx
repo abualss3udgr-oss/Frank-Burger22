@@ -244,13 +244,33 @@ const AdminDashboard: React.FC = () => {
     isActive: true,
   });
 
-  // Auto sound notify on new orders
+  // Request notification permission on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
+
+  // Auto sound notify & Browser Notification on new orders
   useEffect(() => {
     if (orders.length > lastOrdersCount) {
       if (isCashier || soundEnabled) {
         playChimeSound();
       }
       showFeedbackBanner('تم استلام طلب جديد في النظام!');
+
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification('🍔 طلب جديد في فرانك برجر!', {
+            body: 'تم استلام طلب جديد بنجاح، يرجى مراجعة لوحة الكشير.',
+            icon: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=120&h=120&q=80',
+          });
+        } catch {
+          // fallback
+        }
+      }
     }
     setLastOrdersCount(orders.length);
   }, [orders.length, lastOrdersCount, soundEnabled, isCashier]);

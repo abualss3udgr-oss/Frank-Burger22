@@ -308,12 +308,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const loaded = loadFromStorage('settings_v2', INITIAL_SETTINGS);
     return { ...INITIAL_SETTINGS, ...(loaded || {}) };
   });
-  const [orders, setOrders] = useState<Order[]>(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('frank_burger_orders_v2');
-    }
-    return [];
-  });
+  const [orders, setOrders] = useState<Order[]>(() => loadFromStorage('orders_v2', INITIAL_ORDERS));
+
+  // Sync orders across tabs in real-time
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'orders_v2' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setOrders(parsed);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Loyalty points
   const [loyaltyPoints, setLoyaltyPoints] = useState<number>(() => loadFromStorage('loyalty_points', 0));
