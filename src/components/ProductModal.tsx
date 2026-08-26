@@ -90,28 +90,28 @@ export const ProductModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
       {/* Backdrop click dismiss */}
       <div className="fixed inset-0" onClick={() => setActiveProductModal(null)} />
 
       {/* Modal Dialog Card */}
       <div
-        className="relative bg-[#16161b] border border-[#2d2d38] rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl z-10 max-h-[92vh] flex flex-col"
+        className="relative bg-white border border-zinc-200/80 rounded-3xl overflow-hidden max-w-2xl w-full shadow-2xl z-10 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with image */}
-        <div className="relative h-60 sm:h-72 w-full bg-black shrink-0 overflow-hidden">
+        <div className="relative h-60 sm:h-72 w-full bg-zinc-100 shrink-0 overflow-hidden">
           <img
             src={product.image}
             alt={name}
             className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#16161b] via-[#16161b]/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30" />
 
           {/* Close button */}
           <button
             onClick={() => setActiveProductModal(null)}
-            className="absolute top-4 right-4 rtl:right-auto rtl:left-4 p-2.5 rounded-full bg-black/70 hover:bg-black text-white border border-white/10 transition-colors z-20 cursor-pointer shadow-lg"
+            className="absolute top-4 right-4 rtl:right-auto rtl:left-4 p-2.5 rounded-full bg-white/90 hover:bg-white text-zinc-800 border border-zinc-200/80 transition-colors z-20 cursor-pointer shadow-md"
           >
             <X className="w-5 h-5" />
           </button>
@@ -125,7 +125,7 @@ export const ProductModal: React.FC = () => {
               </span>
             )}
             {product.calories && (
-              <span className="bg-black/80 backdrop-blur-md text-zinc-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-white/10">
+              <span className="bg-zinc-900/85 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1 rounded-full border border-zinc-700">
                 {product.calories} {t('calories')}
               </span>
             )}
@@ -133,32 +133,32 @@ export const ProductModal: React.FC = () => {
         </div>
 
         {/* Scrollable Customization Content */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 bg-white">
           {/* Title & Description */}
           <div>
             <div className="flex items-baseline justify-between gap-2">
-              <h2 className="text-xl sm:text-2xl font-black text-white font-heading">{name}</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-zinc-900 font-heading">{name}</h2>
               <div className="text-xl font-black text-[#E51E2A] font-mono shrink-0">
                 {product.price} {t('currency')}
               </div>
             </div>
             
             <div className="flex items-center gap-1 mt-1 mb-2">
-              <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-              <span className="text-xs text-zinc-300 font-bold ml-1 rtl:mr-1">
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span className="text-xs text-zinc-800 font-bold ml-1 rtl:mr-1">
                 {product.rating ? product.rating.toFixed(1) : '5.0'}
               </span>
-              <span className="text-[10px] text-zinc-500">
+              <span className="text-[10px] text-zinc-400">
                 ({product.reviewsCount || Math.floor(Math.random() * 50) + 10} {language === 'ar' ? 'تقييم' : 'reviews'})
               </span>
             </div>
 
-            <p className="text-sm text-zinc-300 mt-2 leading-relaxed">{description}</p>
+            <p className="text-xs sm:text-sm text-zinc-600 mt-2 leading-relaxed font-medium">{description}</p>
 
             {/* Ingredients pills */}
             {ingredients && ingredients.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-[#272730]">
-                <div className="text-xs font-bold text-zinc-400 mb-2 flex items-center gap-1.5">
+              <div className="mt-4 pt-3 border-t border-zinc-100">
+                <div className="text-xs font-bold text-zinc-700 mb-2 flex items-center gap-1.5">
                   <Info className="w-3.5 h-3.5 text-[#E51E2A]" />
                   <span>{language === 'ar' ? 'المكونات الأساسية الطازجة:' : 'Fresh Core Ingredients:'}</span>
                 </div>
@@ -166,7 +166,7 @@ export const ProductModal: React.FC = () => {
                   {ingredients.map((ing, idx) => (
                     <span
                       key={idx}
-                      className="text-xs bg-[#22222b] text-zinc-300 px-2.5 py-1 rounded-lg border border-[#32323f]"
+                      className="text-xs bg-zinc-100 text-zinc-700 px-2.5 py-1 rounded-lg border border-zinc-200/80 font-medium"
                     >
                       {ing}
                     </span>
@@ -178,8 +178,8 @@ export const ProductModal: React.FC = () => {
 
           {/* Size / Patty selector if available */}
           {product.availableSizes && product.availableSizes.length > 1 && (
-            <div className="bg-[#1c1c24] border border-[#2b2b36] p-4 rounded-2xl">
-              <h3 className="text-sm font-bold text-white mb-3 flex items-center justify-between">
+            <div className="bg-zinc-50 border border-zinc-200/80 p-4 rounded-2xl">
+              <h3 className="text-sm font-bold text-zinc-900 mb-3 flex items-center justify-between">
                 <span>{t('chooseSize')}</span>
                 <span className="text-xs text-[#E51E2A] font-semibold">{language === 'ar' ? 'اختيار إلزامي' : 'Required'}</span>
               </h3>
@@ -194,21 +194,21 @@ export const ProductModal: React.FC = () => {
                       onClick={() => setSelectedSize(size)}
                       className={`p-3 rounded-xl border text-start flex flex-col justify-between transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-[#E51E2A]/15 border-[#E51E2A] text-white shadow-md'
-                          : 'bg-[#16161b] border-[#272730] text-zinc-300 hover:border-zinc-500'
+                          ? 'bg-red-50/80 border-[#E51E2A] text-zinc-900 shadow-sm'
+                          : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-bold">{sizeName}</span>
                         <div
                           className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? 'border-[#E51E2A] bg-[#E51E2A]' : 'border-zinc-600'
+                            isSelected ? 'border-[#E51E2A] bg-[#E51E2A]' : 'border-zinc-300'
                           }`}
                         >
                           {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                         </div>
                       </div>
-                      <span className="text-xs font-mono font-bold text-zinc-400">
+                      <span className="text-xs font-mono font-bold text-zinc-500">
                         {size.priceModifier === 0
                           ? language === 'ar' ? 'السعر الأساسي' : 'Base price'
                           : size.priceModifier > 0
@@ -226,8 +226,8 @@ export const ProductModal: React.FC = () => {
           {relevantAddonGroups.map((group) => {
             const title = language === 'ar' ? group.titleAr : group.titleEn;
             return (
-              <div key={group.id} className="bg-[#1c1c24] border border-[#2b2b36] p-4 rounded-2xl">
-                <h3 className="text-sm font-bold text-white mb-3 flex items-center justify-between">
+              <div key={group.id} className="bg-zinc-50 border border-zinc-200/80 p-4 rounded-2xl">
+                <h3 className="text-sm font-bold text-zinc-900 mb-3 flex items-center justify-between">
                   <span>{title}</span>
                   <span className="text-xs text-zinc-400 font-medium">{language === 'ar' ? 'اختياري' : 'Optional'}</span>
                 </h3>
@@ -252,14 +252,14 @@ export const ProductModal: React.FC = () => {
                         }
                         className={`p-2.5 rounded-xl border text-start flex items-center justify-between transition-all cursor-pointer ${
                           checked
-                            ? 'bg-[#E51E2A]/10 border-[#E51E2A] text-white'
-                            : 'bg-[#16161b] border-[#272730] text-zinc-300 hover:border-zinc-500'
+                            ? 'bg-red-50/80 border-[#E51E2A] text-zinc-900 shadow-sm'
+                            : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-400'
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <div
                             className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 ${
-                              checked ? 'border-[#E51E2A] bg-[#E51E2A]' : 'border-zinc-600'
+                              checked ? 'border-[#E51E2A] bg-[#E51E2A]' : 'border-zinc-300'
                             }`}
                           >
                             {checked && <Check className="w-3 h-3 text-white" />}
@@ -279,32 +279,32 @@ export const ProductModal: React.FC = () => {
 
           {/* Special Instructions */}
           <div>
-            <label className="block text-xs font-bold text-zinc-300 mb-1.5">{t('specialNotes')}</label>
+            <label className="block text-xs font-bold text-zinc-700 mb-1.5">{t('specialNotes')}</label>
             <textarea
               rows={2}
               value={specialInstructions}
               onChange={(e) => setSpecialInstructions(e.target.value)}
               placeholder={t('notesPlaceholder')}
-              className="w-full bg-[#1c1c24] border border-[#2b2b36] rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#E51E2A] transition-colors resize-none"
+              className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E51E2A] focus:bg-white transition-colors resize-none"
             />
           </div>
         </div>
 
         {/* Sticky Modal Footer */}
-        <div className="p-4 sm:p-5 bg-[#121217] border-t border-[#272730] flex items-center justify-between gap-3 shrink-0">
+        <div className="p-4 sm:p-5 bg-white border-t border-zinc-200 flex items-center justify-between gap-3 shrink-0">
           {/* Quantity Controls */}
-          <div className="flex items-center bg-[#1c1c24] border border-[#2d2d3b] rounded-xl p-1 shrink-0">
+          <div className="flex items-center bg-zinc-100 border border-zinc-200 rounded-xl p-1 shrink-0">
             <button
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
-              className="p-2 text-zinc-300 hover:text-white disabled:opacity-40 hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              className="p-2 text-zinc-700 hover:text-zinc-900 disabled:opacity-30 hover:bg-zinc-200 rounded-lg transition-colors cursor-pointer"
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="px-3 font-mono font-bold text-sm text-white">{quantity}</span>
+            <span className="px-3 font-mono font-bold text-sm text-zinc-900">{quantity}</span>
             <button
               onClick={() => setQuantity((q) => q + 1)}
-              className="p-2 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
+              className="p-2 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-200 rounded-lg transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
             </button>

@@ -21,13 +21,33 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Testimonials } from '../components/Testimonials';
 const heroBurgerImg = "/hero-burger.jpg";
 
+let globalHasShownIntro = false;
+
 export const HomeView: React.FC = () => {
-  const [showIntro, setShowIntro] = React.useState(true);
+  const [showIntro, setShowIntro] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      if ((window as any).__hasShownFrankIntro || globalHasShownIntro) return false;
+      const hasShown = sessionStorage.getItem('frank_intro_shown');
+      if (hasShown) {
+        globalHasShownIntro = true;
+        (window as any).__hasShownFrankIntro = true;
+        return false;
+      }
+    }
+    return true;
+  });
 
   React.useEffect(() => {
-    const timer = setTimeout(() => setShowIntro(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (showIntro) {
+      globalHasShownIntro = true;
+      if (typeof window !== 'undefined') {
+        (window as any).__hasShownFrankIntro = true;
+        sessionStorage.setItem('frank_intro_shown', 'true');
+      }
+      const timer = setTimeout(() => setShowIntro(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [showIntro]);
 
   const {
     products,
@@ -48,17 +68,57 @@ export const HomeView: React.FC = () => {
         {showIntro && (
           <motion.div
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-white"
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white overflow-hidden pointer-events-none select-none"
           >
-            <motion.img
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png"
-              alt="Logo"
-              className="w-32 h-32"
-            />
+            {/* Ambient Radial Blur */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#E51E2A]/10 rounded-full blur-3xl" />
+
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="relative flex flex-col items-center gap-5 text-center px-4"
+            >
+              {/* Logo with gentle floating spring animation */}
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+                className="relative"
+              >
+                <img
+                  src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png"
+                  alt="Frank Burger Logo"
+                  className="w-36 h-36 sm:w-44 sm:h-44 object-contain filter drop-shadow-lg"
+                />
+              </motion.div>
+
+              {/* Title & Tagline */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="space-y-1"
+              >
+                <h2 className="text-2xl sm:text-3xl font-black font-heading tracking-tight text-zinc-900 uppercase">
+                  FRANK BURGER
+                </h2>
+                <p className="text-xs font-bold text-[#E51E2A] tracking-widest uppercase">
+                  {language === 'ar' ? 'طعم البرجر الأصلي' : 'The Real Burger Experience'}
+                </p>
+              </motion.div>
+
+              {/* Sleek Progress Track */}
+              <div className="w-32 h-1 bg-zinc-100 rounded-full overflow-hidden mt-2">
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '0%' }}
+                  transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full bg-[#E51E2A] rounded-full"
+                />
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
