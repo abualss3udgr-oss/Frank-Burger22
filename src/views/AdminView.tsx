@@ -104,6 +104,7 @@ const AdminDashboard: React.FC = () => {
     openShift,
     closeShift,
     addShiftExpense,
+    language,
   } = useApp();
 
   const isRestricted = adminUser?.role === 'cashier';
