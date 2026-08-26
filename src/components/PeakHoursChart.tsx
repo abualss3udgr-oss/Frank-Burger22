@@ -46,12 +46,12 @@ export const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ orders }) => {
   // Find max value to color the peak bar differently
   const maxOrders = Math.max(...chartData.map(d => d.orders));
 
-  // Custom tooltip to style it dark
+  // Custom tooltip to style it light
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-[#121216] border border-[#24242e] p-3 rounded-lg shadow-xl">
-          <p className="text-zinc-400 text-[10px] font-bold mb-1">{label}</p>
+        <div className="bg-white border border-zinc-200 p-3 rounded-lg shadow-xl">
+          <p className="text-zinc-500 text-[10px] font-bold mb-1">{label}</p>
           <p className="text-[#E51E2A] text-sm font-black">
             {payload[0].value} <span className="text-zinc-500 font-semibold text-xs">طلب</span>
           </p>
@@ -62,12 +62,12 @@ export const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ orders }) => {
   };
 
   return (
-    <div className="bg-[#121216] border border-[#24242e] rounded-2xl p-4 sm:p-5 space-y-4 shadow-md h-[300px] flex flex-col">
+    <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-md h-[300px] flex flex-col">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+        <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
           <span>خريطة أوقات الذروة للطلبات خلال اليوم</span>
         </h3>
-        <span className="text-[10px] text-zinc-400 bg-[#18181f] px-2 py-1 rounded-md border border-[#2c2c36]">
+        <span className="text-[10px] text-zinc-500 bg-zinc-100 px-2 py-1 rounded-md border border-zinc-200">
           آخر 24 ساعة
         </span>
       </div>
@@ -78,13 +78,13 @@ export const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ orders }) => {
             data={chartData}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#24242e" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" vertical={false} />
             <XAxis 
               dataKey="hourStr" 
               stroke="#71717a" 
               fontSize={10} 
               tickLine={false}
-              axisLine={{ stroke: '#24242e' }}
+              axisLine={{ stroke: '#e4e4e7' }}
               minTickGap={15}
             />
             <YAxis 
@@ -94,7 +94,7 @@ export const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ orders }) => {
               axisLine={false} 
               allowDecimals={false}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#1a1a22' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f4f4f5' }} />
             <Bar 
               dataKey="orders" 
               radius={[4, 4, 0, 0]}
@@ -103,7 +103,7 @@ export const PeakHoursChart: React.FC<PeakHoursChartProps> = ({ orders }) => {
               {chartData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={entry.orders === maxOrders && maxOrders > 0 ? '#E51E2A' : '#3f3f46'} 
+                  fill={entry.orders === maxOrders && maxOrders > 0 ? '#E51E2A' : '#a1a1aa'} 
                 />
               ))}
             </Bar>

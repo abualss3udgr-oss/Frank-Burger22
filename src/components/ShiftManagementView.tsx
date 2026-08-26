@@ -41,6 +41,8 @@ export const ShiftManagementView: React.FC = () => {
     branches,
   } = useApp();
 
+  const isSuperAdmin = adminUser?.role === 'super_admin';
+
   // Modals state
   const [isOpenShiftModalOpen, setIsOpenShiftModalOpen] = useState(false);
   const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState(false);
@@ -213,37 +215,15 @@ export const ShiftManagementView: React.FC = () => {
             {activeShift ? (
               <>
                 <button
-                  onClick={() => setIsExpenseModalOpen(true)}
-                  className="px-3.5 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200"
-                >
-                  <TrendingDown className="w-4 h-4 text-rose-600" />
-                  <span>تسجيل مصروف من الدرج</span>
-                </button>
-
-                <button
                   onClick={() => setViewingShiftReport(activeShift)}
                   className="px-3.5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   <span>تقرير الوردية اللحظي</span>
                 </button>
-
-                <button
-                  onClick={handleStartCloseShift}
-                  className="px-4 py-2.5 rounded-xl bg-[#E51E2A] hover:bg-[#c01823] text-white text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shadow-md shadow-[#E51E2A]/20"
-                >
-                  <Lock className="w-4 h-4" />
-                  <span>تسليم وتقفيل الوردية</span>
-                </button>
               </>
             ) : (
-              <button
-                onClick={handleStartOpenShift}
-                className="px-5 py-3 rounded-xl bg-[#E51E2A] hover:bg-[#c01823] text-white text-xs font-black flex items-center gap-2 transition-colors cursor-pointer shadow-md shadow-[#E51E2A]/20"
-              >
-                <Plus className="w-4 h-4" />
-                <span>فتح وردية جديدة واستلام العهدة</span>
-              </button>
+              <></>
             )}
           </div>
         </div>

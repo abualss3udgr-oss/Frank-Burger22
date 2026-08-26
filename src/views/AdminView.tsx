@@ -629,13 +629,10 @@ const AdminDashboard: React.FC = () => {
                   <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
                     لوحة تحكم وإدارة المطعم
                   </h1>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>مباشر متصل لحظياً</span>
-                  </div>
+
                 </div>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  نظام إدارة الطلبات الحية، المطبخ، نقاط البيع والمنيو — {settings.restaurantNameAr}
+                  لوحة تحكم المسئول الأعلى — {settings.restaurantNameAr}
                 </p>
               </>
             )}
@@ -660,123 +657,11 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Active Shift Status Pill */}
-          <button
-            onClick={() => setActiveTab('shifts')}
-            title="إدارة الوردية وتسليم الكاشير"
-            className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm border ${
-              activeShift
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-            }`}
-          >
-            {activeShift ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
-                <Unlock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="text-[11px]">وردية: {activeShift.cashierName}</span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span className="text-[11px]">فتح وردية كاشير</span>
-              </>
-            )}
-          </button>
 
-          {/* Test Sound and Notification Permissions */}
-          <button
-            onClick={requestNotificationsAndAudio}
-            title="تجربة صوت التنبيه والتأكد من إذن الإشعارات"
-            className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 transition-all cursor-pointer shadow-sm active:scale-95"
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span className="text-[11px]">تجربة صوت التنبيه</span>
-          </button>
 
-          {/* Sound Alert Toggle - Only for non-restricted */}
-          {!isRestricted && (
-            <button
-              onClick={() => {
-                const nextState = !soundEnabled;
-                setSoundEnabled(nextState);
-                if (nextState) playChimeSound();
-              }}
-              title={soundEnabled ? 'التنبيهات الصوتية مفعلة' : 'التنبيهات الصوتية معطلة'}
-              className={`p-2 rounded-xl text-xs flex items-center gap-1.5 border transition-all cursor-pointer ${
-                soundEnabled
-                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
-                  : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900'
-              }`}
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              <span className="text-[11px] font-bold hidden sm:inline">
-                {soundEnabled ? 'صوت التنبيه: شغال' : 'صوت التنبيه: صامت'}
-              </span>
-            </button>
-          )}
 
-          {/* Direct Admin URL Link copy - Only for non-restricted */}
-          {!isRestricted && (
-            <button
-              onClick={handleCopyAdminLink}
-              title="نسخ الرابط المباشر لصفحة الإدارة"
-              className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-xl px-3 py-2 text-zinc-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              {copiedLink ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-700 font-bold text-[11px]">تم نسخ الرابط!</span>
-                </>
-              ) : (
-                <>
-                  <LinkIcon className="w-3.5 h-3.5 text-zinc-500" />
-                  <span dir="ltr" className="text-[11px] font-mono text-zinc-500 font-bold">/#admin</span>
-                  <span className="text-[11px] text-zinc-700 font-semibold">نسخ</span>
-                </>
-              )}
-            </button>
-          )}
 
-          {/* Store Open / Closed Switch - Only for non-restricted */}
-          {!isRestricted && (
-            <button
-              onClick={() => {
-                const newState = !settings.isStoreOpen;
-                updateSettings({ isStoreOpen: newState });
-                showFeedbackBanner(newState ? 'المطعم الآن يستقبل الطلبات' : 'تم إغلاق استقبال الطلبات مؤقتاً');
-              }}
-              className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm ${
-                settings.isStoreOpen
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                  : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  settings.isStoreOpen ? 'bg-emerald-500' : 'bg-rose-500'
-                }`}
-              />
-              <span>
-                {settings.isStoreOpen ? 'استقبال الطلبات: مفتوح' : 'المطعم: مغلق مؤقتاً'}
-              </span>
-            </button>
-          )}
 
-          {/* View Customer Storefront - Only for non-restricted */}
-          {!isRestricted && (
-            <button
-              onClick={() => {
-                setCurrentView('home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              title="الانتقال لمتجر العملاء"
-              className="text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 hover:text-zinc-900 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-semibold"
-            >
-              <Store className="w-3.5 h-3.5 text-zinc-500" />
-              <span className="text-[11px]">عرض المتجر</span>
-            </button>
-          )}
 
           {/* Logout Button */}
           <button
@@ -802,48 +687,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
           <nav className="space-y-1.5">
-            {/* Overview - Super Admin Only */}
-            {adminUser?.role === 'super_admin' && (
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                  activeTab === 'overview'
-                    ? 'bg-[#E51E2A] text-white shadow-md'
-                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <LayoutDashboard className="w-4 h-4 shrink-0" />
-                  <span>نظرة عامة وإحصائيات</span>
-                </div>
-                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'overview' ? 'text-zinc-900' : 'text-zinc-500'}`} />
-              </button>
-            )}
 
-            {/* Orders - Available for All (Cashier & Manager) */}
-            <button
-              onClick={() => setActiveTab('orders')}
-              className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
-                activeTab === 'orders'
-                  ? 'bg-[#E51E2A] text-white shadow-md'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <ShoppingBag className="w-4 h-4 shrink-0" />
-                <span>الطلبات الحية (KDS / POS)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {pendingOrdersCount > 0 && (
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                    activeTab === 'orders' ? 'bg-white text-[#E51E2A]' : 'bg-[#E51E2A] text-white'
-                  } animate-pulse`}>
-                    {pendingOrdersCount}
-                  </span>
-                )}
-                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'orders' ? 'text-zinc-900' : 'text-zinc-500'}`} />
-              </div>
-            </button>
 
             {/* Shifts & Cashier Handover - Available for All */}
             <button
@@ -856,7 +700,7 @@ const AdminDashboard: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <Receipt className="w-4 h-4 shrink-0" />
-                <span>الورديات وتسليم الكاشير</span>
+                <span>ورديات الكاشير</span>
               </div>
               <div className="flex items-center gap-2">
                 {activeShift ? (
@@ -1056,7 +900,7 @@ const AdminDashboard: React.FC = () => {
             <p className="text-[11px] text-zinc-500 leading-relaxed">
               {adminUser?.role === 'cashier' 
                 ? 'أنت مسجل كـ "كاشير ومسئول طلبات". مهامك مقتصرة على متابعة الطلبات الحية، تجهيزها، وإرسال تحديثات الحالة للعملاء أولاً بأول.'
-                : 'أنت مسجل كـ "المدير العام". لديك صلاحيات كاملة لإدارة المنيو، الأسعار، الإحصائيات، الكوبونات، والإعدادات.'}
+                : 'أنت مسجل كـ "المسئول الأعلى". لديك صلاحيات كاملة لإدارة المنيو، الأسعار، الإحصائيات، الكوبونات، والإعدادات.'}
             </p>
           </div>
         </aside>
@@ -1282,7 +1126,7 @@ const AdminDashboard: React.FC = () => {
                 onClick={() => setActiveTab('orders')}
                 className="text-xs text-[#E51E2A] hover:underline font-bold cursor-pointer"
               >
-                عرض كافة الطلبات الحية ←
+                عرض كافة الطلبات ←
               </button>
             </div>
 
@@ -2187,10 +2031,12 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* General Store Settings Form */}
           <div className="bg-white border border-zinc-200 rounded-2xl p-5 space-y-4 shadow-md">
-            <h2 className="text-base font-bold text-zinc-900 font-heading flex items-center gap-2">
-              <Settings className="w-4 h-4 text-[#E51E2A]" />
-              <span>إعدادات الاتصال والخدمة العامة</span>
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-zinc-900 font-heading flex items-center gap-2">
+                <Settings className="w-4 h-4 text-[#E51E2A]" />
+                <span>إعدادات الاتصال والخدمة العامة</span>
+              </h2>
+            </div>
 
             <div className="space-y-3 text-xs">
               <div>
@@ -2242,6 +2088,16 @@ const AdminDashboard: React.FC = () => {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="pt-4 border-t border-zinc-100">
+              <button
+                onClick={() => showFeedbackBanner('تم حفظ الإعدادات بنجاح!')}
+                className="w-full px-4 py-3 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                حفظ كافة الإعدادات
+              </button>
             </div>
           </div>
 
