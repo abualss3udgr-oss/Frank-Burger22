@@ -44,7 +44,7 @@ export const HomeView: React.FC = () => {
         (window as any).__hasShownFrankIntro = true;
         localStorage.setItem('frank_intro_shown', 'true');
       }
-      const timer = setTimeout(() => setShowIntro(false), 1500);
+      const timer = setTimeout(() => setShowIntro(false), 2800);
       return () => clearTimeout(timer);
     }
   }, [showIntro]);
