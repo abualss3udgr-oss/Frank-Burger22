@@ -21,6 +21,8 @@ import {
   Shield,
   X,
   RefreshCw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { evaluatePasswordStrength } from '../utils/security';
 
@@ -40,6 +42,7 @@ export const UsersManagementTab: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | AdminRole>('all');
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
   // Modal State for Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -382,6 +385,27 @@ export const UsersManagementTab: React.FC = () => {
                   >
                     {acc.mfaEnabled ? (isAr ? 'مفعلة ✓' : 'Active') : (isAr ? 'غير مفعلة' : 'Disabled')}
                   </span>
+                </div>
+
+                {/* Password Field with Eye Toggle */}
+                <div className="flex items-center justify-between text-zinc-600 border-t border-zinc-200/50 pt-2.5 mt-2">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-[#E51E2A]" />
+                    <span className="font-bold">{isAr ? 'كلمة المرور:' : 'Password:'}</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-zinc-900 font-bold bg-zinc-200/60 px-2 py-0.5 rounded-lg text-[11px] select-all">
+                      {visiblePasswords[acc.id] ? (acc.plainPassword || acc.password || 'Password@2026!') : '••••••••'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setVisiblePasswords(prev => ({ ...prev, [acc.id]: !prev[acc.id] }))}
+                      className="p-1 hover:bg-zinc-200/80 rounded-lg text-zinc-500 hover:text-zinc-800 transition-colors cursor-pointer"
+                      title={isAr ? 'عرض/إخفاء كلمة المرور' : 'Show/Hide Password'}
+                    >
+                      {visiblePasswords[acc.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 

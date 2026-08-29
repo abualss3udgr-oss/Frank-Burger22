@@ -60,6 +60,8 @@ import {
   Shield,
   Activity,
   KeyRound,
+  Globe,
+  Menu,
 } from 'lucide-react';
 
 // Sound alert helper using SoundEffects with auto-unlocked AudioContext & rich multi-part bell chime
@@ -115,12 +117,90 @@ const AdminDashboard: React.FC = () => {
     'overview' | 'orders' | 'shifts' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings' | 'users' | 'audit_logs' | 'security'
   >(() => (isRestricted ? 'orders' : 'overview'));
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   // Search & Filter States
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
   const [orderTypeFilter, setOrderTypeFilter] = useState<'all' | 'delivery' | 'pickup'>('all');
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
+
+  // Reviews management state
+  const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false);
+  const [isEditReviewModalOpen, setIsEditReviewModalOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState<CustomerReview | null>(null);
+
+  // Review fields
+  const [revCustomerName, setRevCustomerName] = useState('');
+  const [revRating, setRevRating] = useState(5);
+  const [revCommentAr, setRevCommentAr] = useState('');
+  const [revCommentEn, setRevCommentEn] = useState('');
+  const [revCustomerAvatar, setRevCustomerAvatar] = useState('');
+  const [revIsApproved, setRevIsApproved] = useState(true);
+
+  const handleAddReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!revCustomerName.trim() || !revCommentAr.trim() || !revCommentEn.trim()) {
+      alert('الرجاء ملء الحقول الإجبارية');
+      return;
+    }
+    addReview({
+      customerName: revCustomerName,
+      customerAvatar: revCustomerAvatar || undefined,
+      rating: revRating,
+      commentAr: revCommentAr,
+      commentEn: revCommentEn,
+      isApproved: revIsApproved,
+    });
+    showFeedbackBanner('تمت إضافة رأي العميل بنجاح');
+    // reset
+    setRevCustomerName('');
+    setRevRating(5);
+    setRevCommentAr('');
+    setRevCommentEn('');
+    setRevCustomerAvatar('');
+    setRevIsApproved(true);
+    setIsAddReviewModalOpen(false);
+  };
+
+  const handleEditReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReview) return;
+    if (!revCustomerName.trim() || !revCommentAr.trim() || !revCommentEn.trim()) {
+      alert('الرجاء ملء الحقول الإجبارية');
+      return;
+    }
+    updateReview(editingReview.id, {
+      customerName: revCustomerName,
+      customerAvatar: revCustomerAvatar || undefined,
+      rating: revRating,
+      commentAr: revCommentAr,
+      commentEn: revCommentEn,
+      isApproved: revIsApproved,
+    });
+    showFeedbackBanner('تم تعديل رأي العميل بنجاح');
+    // reset
+    setEditingReview(null);
+    setRevCustomerName('');
+    setRevRating(5);
+    setRevCommentAr('');
+    setRevCommentEn('');
+    setRevCustomerAvatar('');
+    setRevIsApproved(true);
+    setIsEditReviewModalOpen(false);
+  };
+
+  const openEditReviewModal = (r: CustomerReview) => {
+    setEditingReview(r);
+    setRevCustomerName(r.customerName);
+    setRevRating(r.rating);
+    setRevCommentAr(r.commentAr);
+    setRevCommentEn(r.commentEn);
+    setRevCustomerAvatar(r.customerAvatar || '');
+    setRevIsApproved(r.isApproved);
+    setIsEditReviewModalOpen(true);
+  };
 
   // POS In-Restaurant Order States
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
@@ -693,6 +773,17 @@ const AdminDashboard: React.FC = () => {
               )}
             </button>
           )}
+          {/* Sidebar Toggle for Mobile */}
+          {!isRestricted && (
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="lg:hidden text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-all cursor-pointer font-bold active:scale-95"
+            >
+              {isSidebarOpen ? <X className="w-3.5 h-3.5 text-[#E51E2A]" /> : <Menu className="w-3.5 h-3.5 text-[#E51E2A]" />}
+              <span className="text-[11px]">{isSidebarOpen ? 'إغلاق' : 'القائمة'}</span>
+            </button>
+          )}
+
           <button
             onClick={logoutAdmin}
             title="تسجيل الخروج من لوحة التحكم"
@@ -708,19 +799,31 @@ const AdminDashboard: React.FC = () => {
       <div className={isRestricted ? 'w-full space-y-6' : 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'}>
         {/* Sidebar Navigation - Only if not restricted */}
         {!isRestricted && (
-          <aside className="lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4 sticky top-6">
-            <div className="px-3 py-2 border-b border-zinc-100">
+          <aside className={`lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4 sticky top-6 ${
+            isSidebarOpen ? 'block' : 'hidden lg:block'
+          }`}>
+            <div className="px-3 py-2 border-b border-zinc-100 flex items-center justify-between">
               <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">
                 قائمة التنقل السريع
               </span>
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(false)}
+                className="lg:hidden p-1 text-zinc-400 hover:text-zinc-600 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-                    <nav className="space-y-1.5">
+            <nav className="space-y-1.5">
 
             {/* Overview - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('overview')}
+                onClick={() => {
+                  setActiveTab('overview');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
                   activeTab === 'overview'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -738,7 +841,10 @@ const AdminDashboard: React.FC = () => {
             {/* Orders Management - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('orders')}
+                onClick={() => {
+                  setActiveTab('orders');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
                   activeTab === 'orders'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -763,7 +869,10 @@ const AdminDashboard: React.FC = () => {
             {/* Shifts - Super Admin Only (View Reports) */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('shifts')}
+                onClick={() => {
+                  setActiveTab('shifts');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
                   activeTab === 'shifts'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -796,7 +905,10 @@ const AdminDashboard: React.FC = () => {
             {/* Products - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('products')}
+                onClick={() => {
+                  setActiveTab('products');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                   activeTab === 'products'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -821,7 +933,10 @@ const AdminDashboard: React.FC = () => {
             {/* Categories - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('categories')}
+                onClick={() => {
+                  setActiveTab('categories');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                   activeTab === 'categories'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -846,7 +961,10 @@ const AdminDashboard: React.FC = () => {
             {/* Coupons - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('coupons')}
+                onClick={() => {
+                  setActiveTab('coupons');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                   activeTab === 'coupons'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -871,7 +989,10 @@ const AdminDashboard: React.FC = () => {
             {/* Reviews - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('reviews')}
+                onClick={() => {
+                  setActiveTab('reviews');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                   activeTab === 'reviews'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -896,7 +1017,10 @@ const AdminDashboard: React.FC = () => {
             {/* Settings - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('settings')}
+                onClick={() => {
+                  setActiveTab('settings');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                   activeTab === 'settings'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -914,7 +1038,10 @@ const AdminDashboard: React.FC = () => {
             {/* Users Management - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('users')}
+                onClick={() => {
+                  setActiveTab('users');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                   activeTab === 'users'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -932,7 +1059,10 @@ const AdminDashboard: React.FC = () => {
             {/* Audit Logs - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
-                onClick={() => setActiveTab('audit_logs')}
+                onClick={() => {
+                  setActiveTab('audit_logs');
+                  setIsSidebarOpen(false);
+                }}
                 className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                   activeTab === 'audit_logs'
                     ? 'bg-[#E51E2A] text-white shadow-md'
@@ -949,7 +1079,10 @@ const AdminDashboard: React.FC = () => {
 
             {/* Security & 2FA Settings - Available for all */}
             <button
-              onClick={() => setActiveTab('security')}
+              onClick={() => {
+                setActiveTab('security');
+                setIsSidebarOpen(false);
+              }}
               className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
                 activeTab === 'security'
                   ? 'bg-[#E51E2A] text-white shadow-md'
@@ -2036,13 +2169,30 @@ const AdminDashboard: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'reviews' && (
         <div className="space-y-4">
-          <div className="bg-white border border-zinc-200 rounded-2xl p-4">
-            <h2 className="text-base font-bold text-zinc-900 font-heading">
-              مراجعة تقييمات وآراء العملاء
-            </h2>
-            <p className="text-xs text-zinc-500">
-              الموافقة على آراء العملاء لعرضها على واجهة المتجر الرئيسية
-            </p>
+          <div className="bg-white border border-zinc-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+            <div>
+              <h2 className="text-base font-bold text-zinc-900 font-heading">
+                مراجعة تقييمات وآراء العملاء
+              </h2>
+              <p className="text-xs text-zinc-500">
+                الموافقة على آراء العملاء لعرضها على واجهة المتجر الرئيسية أو إضافة آراء يدوية
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setRevCustomerName('');
+                setRevRating(5);
+                setRevCommentAr('');
+                setRevCommentEn('');
+                setRevCustomerAvatar('');
+                setRevIsApproved(true);
+                setIsAddReviewModalOpen(true);
+              }}
+              className="px-4 py-2 bg-[#E51E2A] text-white text-xs font-bold rounded-xl hover:bg-[#c41520] transition-colors cursor-pointer flex items-center gap-1.5 self-start sm:self-center font-heading"
+            >
+              <Plus className="w-4 h-4" />
+              <span>إضافة رأي جديد</span>
+            </button>
           </div>
 
           <div className="space-y-3">
@@ -2051,8 +2201,11 @@ const AdminDashboard: React.FC = () => {
                 key={r.id}
                 className="p-4 bg-white border border-zinc-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md"
               >
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2.5">
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {r.customerAvatar && (
+                      <img src={r.customerAvatar} alt={r.customerName} className="w-6 h-6 rounded-full object-cover" />
+                    )}
                     <span className="font-bold text-zinc-900 text-sm">{r.customerName}</span>
                     <div className="flex text-amber-400">
                       {[...Array(r.rating)].map((_, i) => (
@@ -2061,10 +2214,13 @@ const AdminDashboard: React.FC = () => {
                     </div>
                     <span className="text-[11px] text-zinc-500 font-mono">{r.date}</span>
                   </div>
-                  <p className="text-xs text-zinc-700 italic">"{r.commentAr}"</p>
+                  <div className="space-y-1 mt-1 text-xs">
+                    <p className="text-zinc-700 italic"><span className="text-[10px] text-zinc-400 mr-1 font-sans">AR:</span> "{r.commentAr}"</p>
+                    <p className="text-zinc-500 italic"><span className="text-[10px] text-zinc-400 mr-1 font-sans">EN:</span> "{r.commentEn}"</p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-end sm:self-center">
+                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
                   <button
                     onClick={() => {
                       toggleApproveReview(r.id);
@@ -2072,11 +2228,19 @@ const AdminDashboard: React.FC = () => {
                     }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       r.isApproved
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/30'
                         : 'bg-zinc-100 text-zinc-600 border border-zinc-200 hover:text-zinc-900'
                     }`}
                   >
                     {r.isApproved ? 'معروض بالمتجر ✓' : 'مخفي (انقر للموافقة)'}
+                  </button>
+
+                  <button
+                    onClick={() => openEditReviewModal(r)}
+                    className="p-2 text-zinc-500 hover:text-blue-500 cursor-pointer rounded-xl bg-zinc-50 border border-zinc-200"
+                    title="تعديل الرأي"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
                   </button>
 
                   <button
@@ -2087,6 +2251,7 @@ const AdminDashboard: React.FC = () => {
                       }
                     }}
                     className="p-2 text-zinc-500 hover:text-rose-400 cursor-pointer rounded-xl bg-zinc-50 border border-zinc-200"
+                    title="حذف الرأي"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -2094,6 +2259,208 @@ const AdminDashboard: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Add Review Modal */}
+          {isAddReviewModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+              <div className="bg-white border border-zinc-200 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <h3 className="text-lg font-black text-zinc-900 font-heading mb-4">
+                  إضافة رأي عميل جديد
+                </h3>
+                <form onSubmit={handleAddReviewSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">اسم العميل *</label>
+                    <input
+                      type="text"
+                      required
+                      value={revCustomerName}
+                      onChange={(e) => setRevCustomerName(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                      placeholder="مثال: أحمد محمد"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">رابط صورة العميل (اختياري)</label>
+                    <input
+                      type="url"
+                      value={revCustomerAvatar}
+                      onChange={(e) => setRevCustomerAvatar(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                      placeholder="https://example.com/avatar.jpg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">التقييم (عدد النجوم) *</label>
+                    <select
+                      value={revRating}
+                      onChange={(e) => setRevRating(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                    >
+                      <option value="5">⭐⭐⭐⭐⭐ (5 نجوم)</option>
+                      <option value="4">⭐⭐⭐⭐ (4 نجوم)</option>
+                      <option value="3">⭐⭐⭐ (3 نجوم)</option>
+                      <option value="2">⭐⭐ (نجمتان)</option>
+                      <option value="1">⭐ (نجمة واحدة)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">التعليق باللغة العربية *</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={revCommentAr}
+                      onChange={(e) => setRevCommentAr(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                      placeholder="اكتب رأي العميل بالعربية هنا..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">التعليق باللغة الإنجليزية *</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={revCommentEn}
+                      onChange={(e) => setRevCommentEn(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                      placeholder="Write customer comment in English..."
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="revApprovedCheckbox"
+                      checked={revIsApproved}
+                      onChange={(e) => setRevIsApproved(e.target.checked)}
+                      className="rounded text-[#E51E2A] focus:ring-[#E51E2A]"
+                    />
+                    <label htmlFor="revApprovedCheckbox" className="text-xs font-bold text-zinc-700 cursor-pointer">
+                      نشر الرأي وعرضه في المتجر فوراً
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-3 justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddReviewModalOpen(false)}
+                      className="px-4 py-2 border border-zinc-300 text-zinc-700 text-xs font-bold rounded-xl hover:bg-zinc-100 transition-colors cursor-pointer font-heading"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-[#E51E2A] text-white text-xs font-bold rounded-xl hover:bg-[#c41520] transition-colors cursor-pointer font-heading"
+                    >
+                      حفظ ونشر
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Review Modal */}
+          {isEditReviewModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+              <div className="bg-white border border-zinc-200 w-full max-w-lg rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <h3 className="text-lg font-black text-zinc-900 font-heading mb-4">
+                  تعديل رأي العميل
+                </h3>
+                <form onSubmit={handleEditReviewSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">اسم العميل *</label>
+                    <input
+                      type="text"
+                      required
+                      value={revCustomerName}
+                      onChange={(e) => setRevCustomerName(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">رابط صورة العميل (اختياري)</label>
+                    <input
+                      type="url"
+                      value={revCustomerAvatar}
+                      onChange={(e) => setRevCustomerAvatar(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">التقييم (عدد النجوم) *</label>
+                    <select
+                      value={revRating}
+                      onChange={(e) => setRevRating(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                    >
+                      <option value="5">⭐⭐⭐⭐⭐ (5 نجوم)</option>
+                      <option value="4">⭐⭐⭐⭐ (4 نجوم)</option>
+                      <option value="3">⭐⭐⭐ (3 نجوم)</option>
+                      <option value="2">⭐⭐ (نجمتان)</option>
+                      <option value="1">⭐ (نجمة واحدة)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">التعليق باللغة العربية *</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={revCommentAr}
+                      onChange={(e) => setRevCommentAr(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-600 mb-1">التعليق باللغة الإنجليزية *</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={revCommentEn}
+                      onChange={(e) => setRevCommentEn(e.target.value)}
+                      className="w-full px-3 py-2 border border-zinc-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#E51E2A] text-zinc-800"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="revEditApprovedCheckbox"
+                      checked={revIsApproved}
+                      onChange={(e) => setRevIsApproved(e.target.checked)}
+                      className="rounded text-[#E51E2A] focus:ring-[#E51E2A]"
+                    />
+                    <label htmlFor="revEditApprovedCheckbox" className="text-xs font-bold text-zinc-700 cursor-pointer">
+                      عرض في المتجر (موافق عليه)
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-3 justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditReviewModalOpen(false)}
+                      className="px-4 py-2 border border-zinc-300 text-zinc-700 text-xs font-bold rounded-xl hover:bg-zinc-100 transition-colors cursor-pointer font-heading"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-[#E51E2A] text-white text-xs font-bold rounded-xl hover:bg-[#c41520] transition-colors cursor-pointer font-heading"
+                    >
+                      حفظ التغييرات
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2244,6 +2611,190 @@ const AdminDashboard: React.FC = () => {
                 className="w-full px-4 py-3 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 حفظ كافة الإعدادات
+              </button>
+            </div>
+          </div>
+
+          {/* SEO & Favicon Settings */}
+          <div className="col-span-1 lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-5 space-y-5 shadow-md">
+            <h2 className="text-base font-bold text-zinc-900 font-heading flex items-center gap-2">
+              <Globe className="w-5 h-5 text-[#E51E2A]" />
+              <span>إعدادات تحسين محركات البحث والأيقونة (SEO & Favicon)</span>
+            </h2>
+            <p className="text-xs text-zinc-500 -mt-2">
+              تحكم في كيفية ظهور متجرك في نتائج بحث جوجل، وفي علامات تبويب المتصفح وأشرطة العناوين.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column: Website Favicon (أيقونة الموقع في المتصفح) */}
+              <div className="space-y-4 border-l border-zinc-100 pl-0 md:pl-6">
+                <h3 className="text-xs font-black text-zinc-800 uppercase tracking-wider font-heading">
+                  أيقونة المتصفح (Browser Favicon)
+                </h3>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                  <div className="w-16 h-16 rounded-xl bg-white border border-zinc-200 shadow-sm flex items-center justify-center p-2.5 overflow-hidden flex-shrink-0">
+                    <img
+                      src={settings.faviconUrl || 'https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696322/Logoo.png'}
+                      alt="Favicon Preview"
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696322/Logoo.png';
+                      }}
+                    />
+                  </div>
+
+                  <div className="space-y-2 text-xs flex-1 w-full">
+                    <div>
+                      <label className="block font-bold text-zinc-700 mb-1">
+                        رابط الأيقونة المباشر:
+                      </label>
+                      <input
+                        type="url"
+                        value={settings.faviconUrl || ''}
+                        onChange={(e) => updateSettings({ faviconUrl: e.target.value })}
+                        placeholder="https://example.com/logo.png"
+                        className="w-full bg-white border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 font-mono outline-none focus:border-[#E51E2A] text-[11px]"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <label className="px-3 py-1.5 rounded-lg bg-[#E51E2A] hover:bg-[#c41420] text-white text-[10px] font-bold cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-sm">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>رفع أيقونة جديدة</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                updateSettings({ faviconUrl: reader.result as string });
+                                showFeedbackBanner('تم تحديث أيقونة المتصفح بنجاح!');
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateSettings({ faviconUrl: 'https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696322/Logoo.png' });
+                          showFeedbackBanner('تمت استعادة الأيقونة الافتراضية للمتجر');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-zinc-200 hover:bg-zinc-300 text-zinc-700 text-[10px] font-bold transition-colors border border-zinc-300"
+                      >
+                        استعادة الافتراضية
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block font-bold text-zinc-700 text-xs mb-1">
+                      عنوان التبويب بالعربية (Tab Title - AR):
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.seoTitleAr || ''}
+                      onChange={(e) => updateSettings({ seoTitleAr: e.target.value })}
+                      placeholder="فرانك برجر | البرجر على أصوله"
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 text-xs outline-none focus:border-[#E51E2A]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-zinc-700 text-xs mb-1">
+                      عنوان التبويب بالإنجليزية (Tab Title - EN):
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.seoTitleEn || ''}
+                      onChange={(e) => updateSettings({ seoTitleEn: e.target.value })}
+                      placeholder="Frank Burger | Real Bold Gourmet Burgers"
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 text-xs outline-none focus:border-[#E51E2A]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Meta Description & Keywords */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-zinc-800 uppercase tracking-wider font-heading">
+                  بيانات الأرشفة ومحركات البحث (SEO Meta Tags)
+                </h3>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block font-bold text-zinc-700 text-xs mb-1">
+                      وصف الموقع بالعربية (Meta Description - AR):
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={settings.seoDescriptionAr || ''}
+                      onChange={(e) => updateSettings({ seoDescriptionAr: e.target.value })}
+                      placeholder="اكتب وصفًا دقيقًا لمتجرك ليظهر أسفل العنوان في محرك بحث جوجل..."
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 text-xs outline-none focus:border-[#E51E2A]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-zinc-700 text-xs mb-1">
+                      وصف الموقع بالإنجليزية (Meta Description - EN):
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={settings.seoDescriptionEn || ''}
+                      onChange={(e) => updateSettings({ seoDescriptionEn: e.target.value })}
+                      placeholder="Write website description for English search results..."
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 text-xs outline-none focus:border-[#E51E2A]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-zinc-700 text-xs mb-1">
+                      الكلمات الدلالية بالعربية (Meta Keywords - AR):
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.seoKeywordsAr || ''}
+                      onChange={(e) => updateSettings({ seoKeywordsAr: e.target.value })}
+                      placeholder="فرانك برجر, برجر اسيوط, مطعم برجر"
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 text-xs outline-none focus:border-[#E51E2A]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-zinc-700 text-xs mb-1">
+                      الكلمات الدلالية بالإنجليزية (Meta Keywords - EN):
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.seoKeywordsEn || ''}
+                      onChange={(e) => updateSettings({ seoKeywordsEn: e.target.value })}
+                      placeholder="frank burger, burger assiut, restaurant"
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 text-xs outline-none focus:border-[#E51E2A]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-zinc-100 flex items-center justify-between">
+              <span className="text-[10px] text-zinc-400">
+                * يتم تفعيل وتحديث الأيقونة والبيانات في المتصفح وبطاقات النشر أوتوماتيكياً ولحظياً بمجرد الحفظ.
+              </span>
+              <button
+                type="button"
+                onClick={() => showFeedbackBanner('تم حفظ وتطبيق كافة إعدادات SEO والأيقونة بنجاح!')}
+                className="px-6 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer font-heading"
+              >
+                تطبيق وحفظ إعدادات الـ SEO
               </button>
             </div>
           </div>

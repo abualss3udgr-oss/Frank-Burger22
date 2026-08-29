@@ -588,6 +588,162 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
+  // Reviews real-time synchronization with Firestore
+  useEffect(() => {
+    console.log('[DASHBOARD] Starting reviews listener');
+    const reviewsCollectionRef = collection(db, 'reviews');
+
+    const unsubscribeReviews = onSnapshot(
+      reviewsCollectionRef,
+      async (snapshot) => {
+        console.log(`[DASHBOARD] Reviews listener active - received snapshot update. Document count: ${snapshot.size}`);
+        
+        // 1. If the database is completely empty (e.g. fresh environment), seed with initial reviews
+        if (snapshot.empty) {
+          console.log('[DASHBOARD] Firestore reviews collection is empty. Seeding INITIAL_REVIEWS...');
+          try {
+            for (const r of INITIAL_REVIEWS) {
+              await setDoc(doc(db, 'reviews', r.id), r);
+            }
+            console.log('[DASHBOARD] INITIAL_REVIEWS seeded successfully.');
+          } catch (err) {
+            console.error('[DASHBOARD ERROR] Failed to seed initial reviews:', err);
+          }
+          return;
+        }
+
+        // 2. Parse reviews from snapshot
+        const firestoreReviews: CustomerReview[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as CustomerReview;
+          firestoreReviews.push({ ...data, id: docSnap.id });
+        });
+
+        // 3. Sort reviews (newest first or based on date field)
+        firestoreReviews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        // 4. Update state and storage
+        setReviews(firestoreReviews);
+        saveToStorage('reviews_v3', firestoreReviews);
+      },
+      (error) => {
+        console.error(`[DASHBOARD ERROR] Firestore Reviews Listener Error: ${error.message}`);
+        handleFirestoreError(error, OperationType.GET, 'reviews');
+      }
+    );
+
+    // Storage Event fallback for same-device cross-tab synchronization
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'reviews_v3' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) {
+            setReviews(parsed);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      unsubscribeReviews();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // Settings real-time synchronization with Firestore
+  useEffect(() => {
+    console.log('[DASHBOARD] Starting settings listener');
+    const settingsDocRef = doc(db, 'settings', 'global');
+
+    const unsubscribeSettings = onSnapshot(
+      settingsDocRef,
+      async (docSnap) => {
+        if (!docSnap.exists()) {
+          console.log('[DASHBOARD] Firestore settings/global document is empty. Seeding INITIAL_SETTINGS...');
+          try {
+            await setDoc(settingsDocRef, INITIAL_SETTINGS);
+            console.log('[DASHBOARD] INITIAL_SETTINGS seeded successfully in Firestore.');
+          } catch (err) {
+            console.error('[DASHBOARD ERROR] Failed to seed initial settings:', err);
+          }
+          return;
+        }
+
+        const firestoreSettings = docSnap.data() as RestaurantSettings;
+        console.log('[DASHBOARD] Received global settings from Firestore');
+        
+        // Ensure new SEO default values are merged if they are missing in existing Firestore doc
+        const mergedSettings = { ...INITIAL_SETTINGS, ...firestoreSettings };
+        setSettings(mergedSettings);
+        saveToStorage('settings_v2', mergedSettings);
+      },
+      (error) => {
+        console.error(`[DASHBOARD ERROR] Firestore Settings Listener Error: ${error.message}`);
+        handleFirestoreError(error, OperationType.GET, 'settings');
+      }
+    );
+
+    return () => {
+      unsubscribeSettings();
+    };
+  }, []);
+
+  // Dynamic SEO & Metadata & Favicon update
+  useEffect(() => {
+    const isAr = language === 'ar';
+    const title = isAr
+      ? (settings.seoTitleAr || settings.restaurantNameAr)
+      : (settings.seoTitleEn || settings.restaurantNameEn);
+    const description = isAr
+      ? (settings.seoDescriptionAr || settings.sloganAr)
+      : (settings.seoDescriptionEn || settings.sloganEn);
+    const keywords = isAr
+      ? (settings.seoKeywordsAr || '')
+      : (settings.seoKeywordsEn || '');
+    const favicon = settings.faviconUrl || 'https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696322/Logoo.png';
+
+    // 1. Update title
+    document.title = title;
+
+    // 2. Update meta description
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', description);
+
+    // 3. Update meta keywords
+    let metaKeywords = document.querySelector('meta[name="keywords"]');
+    if (!metaKeywords) {
+      metaKeywords = document.createElement('meta');
+      metaKeywords.setAttribute('name', 'keywords');
+      document.head.appendChild(metaKeywords);
+    }
+    metaKeywords.setAttribute('content', keywords);
+
+    // 4. Update Open Graph tags
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', description);
+
+    // 5. Update Favicon
+    let linkFavicon = document.querySelector('link[rel="icon"]');
+    if (!linkFavicon) {
+      linkFavicon = document.createElement('link');
+      linkFavicon.setAttribute('rel', 'icon');
+      document.head.appendChild(linkFavicon);
+    }
+    linkFavicon.setAttribute('href', favicon);
+    linkFavicon.setAttribute('type', 'image/png');
+    
+    console.log(`[SEO] Meta elements updated. Title: "${title}", Favicon: "${favicon}"`);
+  }, [settings, language]);
+
   // Active shift live computation
   const activeShift = useMemo(() => {
     const active = shifts.find((s) => s.status === 'active');
@@ -1401,6 +1557,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (passwordMatches) {
         const hashed = await hashPassword(cleanPass);
         foundAcc.passwordHash = hashed;
+        foundAcc.plainPassword = cleanPass;
         delete foundAcc.password;
         setAdminAccounts((prev) => prev.map((a) => (a.id === foundAcc!.id ? { ...foundAcc! } : a)));
       }
@@ -1979,6 +2136,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: `acc-${Date.now()}`,
       username: cleanUser,
       passwordHash: hash,
+      plainPassword: acc.password,
       createdAt: new Date().toISOString(),
       activeSessions: [],
     };
@@ -2001,6 +2159,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (patch.password) {
       const hashed = await hashPassword(patch.password);
       patch.passwordHash = hashed;
+      patch.plainPassword = patch.password;
       delete patch.password;
     }
 
@@ -2154,30 +2313,77 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Reviews CRUD
-  const addReview = (rev: Omit<CustomerReview, 'id' | 'date'>) => {
+  const addReview = async (rev: Omit<CustomerReview, 'id' | 'date'>) => {
+    const newId = `rev-${Date.now()}`;
     const newRev: CustomerReview = {
       ...rev,
-      id: `rev-${Date.now()}`,
+      id: newId,
       date: new Date().toISOString().split('T')[0],
       isApproved: true,
     };
+    
+    // Optimistically update local state
     setReviews((prev) => [newRev, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'reviews', newId), newRev);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, `reviews/${newId}`);
+    }
   };
 
-  const updateReview = (id: string, patch: Partial<CustomerReview>) => {
-    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const updateReview = async (id: string, patch: Partial<CustomerReview>) => {
+    const existingRev = reviews.find((r) => r.id === id);
+    if (!existingRev) return;
+
+    const updated = { ...existingRev, ...patch };
+
+    // Optimistically update local state
+    setReviews((prev) => prev.map((r) => (r.id === id ? updated : r)));
+
+    try {
+      await setDoc(doc(db, 'reviews', id), updated);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `reviews/${id}`);
+    }
   };
 
-  const deleteReview = (id: string) => {
+  const deleteReview = async (id: string) => {
+    // Optimistically update local state
     setReviews((prev) => prev.filter((r) => r.id !== id));
+
+    try {
+      await deleteDoc(doc(db, 'reviews', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `reviews/${id}`);
+    }
   };
 
-  const toggleApproveReview = (id: string) => {
-    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, isApproved: !r.isApproved } : r)));
+  const toggleApproveReview = async (id: string) => {
+    const existingRev = reviews.find((r) => r.id === id);
+    if (!existingRev) return;
+
+    const updated = { ...existingRev, isApproved: !existingRev.isApproved };
+
+    // Optimistically update local state
+    setReviews((prev) => prev.map((r) => (r.id === id ? updated : r)));
+
+    try {
+      await setDoc(doc(db, 'reviews', id), updated);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `reviews/${id}`);
+    }
   };
 
-  const updateSettings = (patch: Partial<RestaurantSettings>) => {
-    setSettings((prev) => ({ ...prev, ...patch }));
+  const updateSettings = async (patch: Partial<RestaurantSettings>) => {
+    const updated = { ...settings, ...patch };
+    setSettings(updated);
+    saveToStorage('settings_v2', updated);
+    try {
+      await setDoc(doc(db, 'settings', 'global'), updated);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'settings/global');
+    }
   };
 
   return (

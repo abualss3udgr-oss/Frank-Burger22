@@ -1238,6 +1238,14 @@ export const INITIAL_SETTINGS: RestaurantSettings = {
   facebookPixelId: '',
   tiktokPixelId: '',
   googleAnalyticsId: '',
+  // SEO & Meta Defaults
+  seoTitleAr: 'فرانك برجر | البرجر على أصوله - اطلب أونلاين',
+  seoTitleEn: 'Frank Burger | Real Bold Gourmet Burgers - Order Online',
+  seoDescriptionAr: 'فرانك برجر - برجر مشوي طازج 100% لحم بقري أنجوس، خبز بريوش طازج يومياً، وصوصات فرانك الخاصة. اطلب الآن واستمتع بتوصيل سريع وساخن.',
+  seoDescriptionEn: 'Frank Burger - 100% Fresh Angus Beef Burgers, Fresh Brioche Buns Daily, and Frank Special Sauces. Order now and enjoy fast & hot delivery.',
+  seoKeywordsAr: 'فرانك برجر, مطعم برجر اسيوط, برجر اسيوط, بيتزا اسيوط, اكل اسيوط, توصيل اسيوط, Frank Burger Assiut',
+  seoKeywordsEn: 'Frank Burger, burger Assiut, pizza Assiut, Assiut delivery, gourmet burger Egypt',
+  faviconUrl: 'https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696322/Logoo.png',
 };
 
 export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
@@ -1246,6 +1254,7 @@ export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
     username: 'admin',
     email: 'admin@frankburger.com',
     password: 'Password@2026!',
+    plainPassword: 'Password@2026!',
     name: 'المسؤول الأعلى (Super Admin)',
     role: 'super_admin',
     securityPin: '2026',
@@ -1257,6 +1266,7 @@ export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
     username: 'manager',
     email: 'manager@frankburger.com',
     password: 'Password@2026!',
+    plainPassword: 'Password@2026!',
     name: 'المسؤول العام (General Manager)',
     role: 'super_admin',
     branchId: 'branch-feryal',
@@ -1270,6 +1280,7 @@ export const DEFAULT_ADMIN_ACCOUNTS: AdminAccount[] = [
     username: 'cashier',
     email: 'cashier@frankburger.com',
     password: 'Password@2026!',
+    plainPassword: 'Password@2026!',
     name: 'الكاشير ومسؤول الطلبات',
     role: 'cashier',
     branchId: 'branch-feryal',

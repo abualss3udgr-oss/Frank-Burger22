@@ -80,6 +80,62 @@
         "isUsed": { "type": "boolean" }
       },
       "required": ["id", "username", "email", "tokenHash", "createdAt", "expiresAt", "isUsed"]
+    },
+    "CustomerReview": {
+      "title": "CustomerReview",
+      "description": "Client testimonial and review moderation document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerAvatar": { "type": "string" },
+        "rating": { "type": "number" },
+        "commentAr": { "type": "string" },
+        "commentEn": { "type": "string" },
+        "date": { "type": "string" },
+        "isApproved": { "type": "boolean" },
+        "featured": { "type": "boolean" }
+      },
+      "required": ["id", "customerName", "rating", "commentAr", "commentEn", "date", "isApproved"]
+    },
+    "RestaurantSettings": {
+      "title": "RestaurantSettings",
+      "description": "Global restaurant settings, SEO metadata, and contact info",
+      "type": "object",
+      "properties": {
+        "restaurantNameAr": { "type": "string" },
+        "restaurantNameEn": { "type": "string" },
+        "sloganAr": { "type": "string" },
+        "sloganEn": { "type": "string" },
+        "isOpen": { "type": "boolean" },
+        "allowScheduledWhenClosed": { "type": "boolean" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "addressAr": { "type": "string" },
+        "addressEn": { "type": "string" },
+        "openingHoursAr": { "type": "string" },
+        "openingHoursEn": { "type": "string" },
+        "currencyAr": { "type": "string" },
+        "currencyEn": { "type": "string" },
+        "taxPercentage": { "type": "number" },
+        "freeDeliveryThreshold": { "type": "number" },
+        "socialFacebook": { "type": "string" },
+        "socialInstagram: " : { "type": "string" },
+        "socialTiktok": { "type": "string" },
+        "rushHourMode": { "type": "boolean" },
+        "estimatedPreparationTimeMinutes": { "type": "number" },
+        "facebookPixelId": { "type": "string" },
+        "tiktokPixelId": { "type": "string" },
+        "googleAnalyticsId": { "type": "string" },
+        "seoTitleAr": { "type": "string" },
+        "seoTitleEn": { "type": "string" },
+        "seoDescriptionAr": { "type": "string" },
+        "seoDescriptionEn": { "type": "string" },
+        "seoKeywordsAr": { "type": "string" },
+        "seoKeywordsEn": { "type": "string" },
+        "faviconUrl": { "type": "string" }
+      },
+      "required": ["restaurantNameAr", "restaurantNameEn", "isOpen"]
     }
   },
   "firestore": {
@@ -102,6 +158,14 @@
     "/password_resets/{resetId}": {
       "schema": "PasswordReset",
       "description": "Hashed password reset tokens"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "CustomerReview",
+      "description": "Client testimonials and reviews"
+    },
+    "/settings/{settingsId}": {
+      "schema": "RestaurantSettings",
+      "description": "Global settings document"
     }
   }
 }

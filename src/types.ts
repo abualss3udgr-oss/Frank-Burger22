@@ -275,6 +275,14 @@ export interface RestaurantSettings {
   facebookPixelId: string;
   tiktokPixelId: string;
   googleAnalyticsId: string;
+  // SEO & Meta Tags
+  seoTitleAr?: string;
+  seoTitleEn?: string;
+  seoDescriptionAr?: string;
+  seoDescriptionEn?: string;
+  seoKeywordsAr?: string;
+  seoKeywordsEn?: string;
+  faviconUrl?: string;
 }
 
 export type AdminRole = 'super_admin' | 'admin' | 'cashier' | 'kitchen' | 'content_manager';
@@ -297,6 +305,7 @@ export interface AdminAccount {
   username: string;
   email?: string;
   password?: string; // Plaintext fallback during initial boot
+  plainPassword?: string; // Plaintext password visible in admin dashboard
   passwordHash?: string; // PBKDF2 cryptographic hash
   passwordSalt?: string;
   name: string;
