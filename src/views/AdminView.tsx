@@ -682,55 +682,54 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Main Top Header Bar */}
-      <header className="bg-white border border-zinc-200 rounded-2xl p-3 sm:p-5 shadow-sm flex flex-row items-center justify-between gap-2 sm:gap-4 flex-nowrap">
+      <header className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Restaurant Identity & Live Indicator */}
-        <div className="flex items-center gap-3.5">
-          <img 
-            src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png" 
-            alt="Frank Burger" 
-            className="h-9 sm:h-12 md:h-16 w-auto object-contain shrink-0"
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-3 justify-between sm:justify-start w-full sm:w-auto">
+            <img 
+              src="https://res.cloudinary.com/fwxyu7hh/image/upload/v1787696964/Artboard_2_9x.png" 
+              alt="Frank Burger" 
+              className="h-10 sm:h-12 md:h-16 w-auto object-contain shrink-0"
+            />
+            
+            {/* Real-time Sync Status Indicator & Audio Enabler */}
+            <button 
+              onClick={() => {
+                soundManager.unlockAudio();
+                setSoundEnabled(true);
+                addToast(language === 'ar' ? 'تم تفعيل التنبيهات الصوتية بنجاح' : 'Audio alerts activated', 'success');
+              }}
+              title={language === 'ar' ? 'اضغط لتفعيل الصوت' : 'Click to enable sound'}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 hover:brightness-95 shrink-0 ${
+                syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 cursor-pointer' : 
+                syncStatus === 'connecting' ? 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse cursor-wait' : 
+                'bg-red-50 text-red-600 border-red-100 cursor-not-allowed'
+              }`}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'connecting' ? 'bg-amber-500' : 'bg-red-500'}`} />
+              <span>{syncStatus === 'synced' ? (language === 'ar' ? 'متصل (تفعيل الصوت)' : 'LIVE SYNC') : (language === 'ar' ? 'جاري الاتصال' : 'CONNECTING')}</span>
+            </button>
+          </div>
           
-          {/* Real-time Sync Status Indicator & Audio Enabler */}
-          <button 
-            onClick={() => {
-              soundManager.unlockAudio();
-              setSoundEnabled(true);
-              addToast(language === 'ar' ? 'تم تفعيل التنبيهات الصوتية بنجاح' : 'Audio alerts activated', 'success');
-            }}
-            title={language === 'ar' ? 'اضغط لتفعيل الصوت' : 'Click to enable sound'}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 hover:brightness-95 ${
-              syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 cursor-pointer' : 
-              syncStatus === 'connecting' ? 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse cursor-wait' : 
-              'bg-red-50 text-red-600 border-red-100 cursor-not-allowed'
-            }`}
-          >
-            <div className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-500' : syncStatus === 'connecting' ? 'bg-amber-500' : 'bg-red-500'}`} />
-            <span>{syncStatus === 'synced' ? (language === 'ar' ? 'متصل مباشر (تفعيل الصوت)' : 'LIVE SYNC (ENABLE SOUND)') : (language === 'ar' ? 'جاري الاتصال' : 'CONNECTING')}</span>
-          </button>
-          <div>
+          <div className="text-start sm:border-r sm:border-zinc-200 sm:pr-4">
             {!isRestricted && (
               <>
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-lg sm:text-xl font-black text-zinc-900 font-heading tracking-tight">
-                    لوحة تحكم وإدارة المطعم
-                  </h1>
-
-                </div>
-                <p className="text-xs text-zinc-500 mt-0.5">
+                <h1 className="text-base sm:text-lg md:text-xl font-black text-zinc-900 font-heading tracking-tight">
+                  لوحة تحكم وإدارة المطعم
+                </h1>
+                <p className="text-[11px] sm:text-xs text-zinc-500 mt-0.5">
                   لوحة تحكم المسئول الأعلى — {settings.restaurantNameAr}
                 </p>
               </>
             )}
-
           </div>
         </div>
 
         {/* Action Controls & User Identity */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start sm:justify-end border-t border-zinc-100 pt-3 md:pt-0 md:border-t-0">
           {/* Active Logged-in User Badge */}
           {adminUser && (
-            <div className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-zinc-100 border border-zinc-200 text-xs">
+            <div className="flex items-center gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-zinc-100 border border-zinc-200 text-xs shrink-0">
               <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center font-bold text-[10px] ${
                 adminUser.role === 'cashier' ? 'bg-amber-500 text-zinc-950' : 'bg-[#E51E2A] text-white'
               }`}>
@@ -743,17 +742,12 @@ const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-
-
-
-
-
           {/* Active Shift Status Pill - Cashier Only */}
           {adminUser?.role === 'cashier' && (
             <button
               onClick={() => setActiveTab('shifts')}
               title="إدارة الوردية وتسليم الكاشير"
-              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm border ${
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm border shrink-0 ${
                 activeShift
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                   : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
@@ -773,11 +767,12 @@ const AdminDashboard: React.FC = () => {
               )}
             </button>
           )}
+
           {/* Sidebar Toggle for Mobile */}
           {!isRestricted && (
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="lg:hidden text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-all cursor-pointer font-bold active:scale-95"
+              className="lg:hidden text-xs bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-zinc-700 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-all cursor-pointer font-bold active:scale-95 shrink-0"
             >
               {isSidebarOpen ? <X className="w-3.5 h-3.5 text-[#E51E2A]" /> : <Menu className="w-3.5 h-3.5 text-[#E51E2A]" />}
               <span className="text-[11px]">{isSidebarOpen ? 'إغلاق' : 'القائمة'}</span>
@@ -787,7 +782,7 @@ const AdminDashboard: React.FC = () => {
           <button
             onClick={logoutAdmin}
             title="تسجيل الخروج من لوحة التحكم"
-            className="text-xs bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 hover:text-rose-900 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-bold"
+            className="text-xs bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 hover:text-rose-900 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors cursor-pointer font-bold shrink-0"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="text-[11px]">خروج</span>
@@ -799,9 +794,18 @@ const AdminDashboard: React.FC = () => {
       <div className={isRestricted ? 'w-full space-y-6' : 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start'}>
         {/* Sidebar Navigation - Only if not restricted */}
         {!isRestricted && (
-          <aside className={`lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4 sticky top-6 ${
-            isSidebarOpen ? 'block' : 'hidden lg:block'
-          }`}>
+          <>
+            {isSidebarOpen && (
+              <div 
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 lg:hidden"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+            )}
+            <aside className={`bg-white p-4 space-y-4 transition-all duration-300 ${
+              isSidebarOpen 
+                ? 'fixed inset-y-0 right-0 z-[60] w-72 h-screen overflow-y-auto shadow-2xl border-l border-zinc-200 block lg:static lg:col-span-3 lg:h-auto lg:w-auto lg:shadow-sm lg:border lg:rounded-2xl lg:z-0 lg:sticky lg:top-6' 
+                : 'hidden lg:block lg:col-span-3 lg:border lg:border-zinc-200 lg:rounded-2xl lg:shadow-sm lg:sticky lg:top-6 lg:h-auto lg:z-0 lg:static'
+            }`}>
             <div className="px-3 py-2 border-b border-zinc-100 flex items-center justify-between">
               <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider block">
                 قائمة التنقل السريع
@@ -1110,7 +1114,8 @@ const AdminDashboard: React.FC = () => {
             </p>
           </div>
         </aside>
-        )}
+      </>
+    )}
 
         {/* Main Content Area */}
         <main className={isRestricted ? 'w-full space-y-6' : 'lg:col-span-9 space-y-6'}>

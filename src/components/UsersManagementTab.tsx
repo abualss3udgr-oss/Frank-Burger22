@@ -352,32 +352,32 @@ export const UsersManagementTab: React.FC = () => {
               </div>
 
               {/* Details Details Grid */}
-              <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 text-xs space-y-2">
-                <div className="flex items-center justify-between text-zinc-600">
-                  <span className="flex items-center gap-1.5">
+              <div className="p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200/80 text-xs space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-zinc-600 border-b border-zinc-200/30 sm:border-b-0 pb-1.5 sm:pb-0">
+                  <span className="flex items-center gap-1.5 shrink-0">
                     <Mail className="w-3.5 h-3.5 text-zinc-400" />
                     <span>{isAr ? 'البريد:' : 'Email:'}</span>
                   </span>
-                  <span className="font-mono text-zinc-900 font-medium">{acc.email || `${acc.username}@frankburger.com`}</span>
+                  <span className="font-mono text-zinc-900 font-medium break-all text-start sm:text-end">{acc.email || `${acc.username}@frankburger.com`}</span>
                 </div>
 
-                <div className="flex items-center justify-between text-zinc-600">
-                  <span className="flex items-center gap-1.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-zinc-600 border-b border-zinc-200/30 sm:border-b-0 pb-1.5 sm:pb-0">
+                  <span className="flex items-center gap-1.5 shrink-0">
                     <Building2 className="w-3.5 h-3.5 text-zinc-400" />
                     <span>{isAr ? 'الفرع المخصص:' : 'Branch:'}</span>
                   </span>
-                  <span className="font-bold text-zinc-800">
+                  <span className="font-bold text-zinc-800 text-start sm:text-end">
                     {acc.branchNameAr || (isSuperAdmin ? (isAr ? 'كافة الفروع' : 'All Branches') : (isAr ? 'فرع فريال' : 'Feryal'))}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-zinc-600">
-                  <span className="flex items-center gap-1.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-zinc-600 border-b border-zinc-200/30 sm:border-b-0 pb-1.5 sm:pb-0">
+                  <span className="flex items-center gap-1.5 shrink-0">
                     <Smartphone className="w-3.5 h-3.5 text-zinc-400" />
                     <span>{isAr ? 'المصادقة الثنائية (2FA):' : '2FA Status:'}</span>
                   </span>
                   <span
-                    className={`font-bold px-2 py-0.5 rounded-md text-[10px] ${
+                    className={`font-bold px-2 py-0.5 rounded-md text-[10px] self-start sm:self-auto ${
                       acc.mfaEnabled
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-zinc-200 text-zinc-600'
@@ -388,13 +388,13 @@ export const UsersManagementTab: React.FC = () => {
                 </div>
 
                 {/* Password Field with Eye Toggle */}
-                <div className="flex items-center justify-between text-zinc-600 border-t border-zinc-200/50 pt-2.5 mt-2">
-                  <span className="flex items-center gap-1.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 text-zinc-600 border-t border-zinc-200/50 pt-2.5 mt-2">
+                  <span className="flex items-center gap-1.5 shrink-0">
                     <KeyRound className="w-3.5 h-3.5 text-[#E51E2A]" />
                     <span className="font-bold">{isAr ? 'كلمة المرور:' : 'Password:'}</span>
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-zinc-900 font-bold bg-zinc-200/60 px-2 py-0.5 rounded-lg text-[11px] select-all">
+                  <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto justify-between sm:justify-end">
+                    <span className="font-mono text-zinc-900 font-bold bg-zinc-200/60 px-2 py-0.5 rounded-lg text-[11px] select-all break-all max-w-[150px] truncate sm:max-w-none">
                       {visiblePasswords[acc.id] ? (acc.plainPassword || acc.password || 'Password@2026!') : '••••••••'}
                     </span>
                     <button
