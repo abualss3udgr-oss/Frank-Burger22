@@ -1472,8 +1472,70 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const isFavorite = (productId: string) => favorites.includes(productId);
 
   const updateCustomerProfile = (info: Partial<CustomerInfo>) => {
-    setCustomerProfile((prev) => ({ ...prev, ...info }));
+    setCustomerProfile((prev) => {
+      const updated = { ...prev, ...info };
+      
+      // Persist to Firestore if user is logged in
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        setDoc(userRef, {
+          name: updated.name || '',
+          phone: updated.phone || '',
+          email: updated.email || user.email || '',
+          whatsapp: updated.whatsapp || '',
+          addressStreet: updated.addressStreet || '',
+          addressBuilding: updated.addressBuilding || '',
+          addressNotes: updated.addressNotes || '',
+          deliveryZoneId: updated.deliveryZoneId || '',
+        }, { merge: true }).catch((err) => {
+          console.error('[PROFILE ERROR] Failed to save user profile to Firestore:', err);
+        });
+      }
+      
+      return updated;
+    });
   };
+
+  // Real-time listener for current logged-in user's profile and favorites
+  useEffect(() => {
+    if (!user) {
+      setFavorites([]);
+      return;
+    }
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribeUserDoc = onSnapshot(
+      userDocRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          
+          // Sync favorites
+          if (data.favorites) {
+            setFavorites(data.favorites);
+          }
+          
+          // Sync customerProfile
+          setCustomerProfile((prev) => ({
+            ...prev,
+            name: data.name || prev.name || user.displayName || '',
+            phone: data.phone || prev.phone || user.phoneNumber || '',
+            email: data.email || prev.email || user.email || '',
+            whatsapp: data.whatsapp || prev.whatsapp || '',
+            addressStreet: data.addressStreet || prev.addressStreet || '',
+            addressBuilding: data.addressBuilding || prev.addressBuilding || '',
+            addressNotes: data.addressNotes || prev.addressNotes || '',
+            deliveryZoneId: data.deliveryZoneId || prev.deliveryZoneId || '',
+          }));
+        }
+      },
+      (error) => {
+        console.error('Error listening to current user doc:', error);
+      }
+    );
+
+    return () => unsubscribeUserDoc();
+  }, [user]);
 
   // Admin & Security Functions
   const addAuditLog = (

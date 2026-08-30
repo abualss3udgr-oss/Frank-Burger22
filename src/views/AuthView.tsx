@@ -6,7 +6,7 @@ import {
   GoogleAuthProvider, 
   signInWithPopup 
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useApp } from '../context/AppContext';
 
 export const AuthView: React.FC = () => {
@@ -46,6 +46,13 @@ export const AuthView: React.FC = () => {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
+        // Save to localStorage as a fallback in case the component unmounts instantly
+        localStorage.setItem('pending_signup_profile', JSON.stringify({
+          name,
+          phone,
+          email,
+          createdAt: new Date().toISOString()
+        }));
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           name,
@@ -63,7 +70,22 @@ export const AuthView: React.FC = () => {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      // Check if user exists in "users" collection
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        await setDoc(userDocRef, {
+          name: user.displayName || 'Google User',
+          phone: user.phoneNumber || '',
+          email: user.email || '',
+          createdAt: new Date().toISOString(),
+          favorites: []
+        });
+      }
     } catch (err: any) {
       console.error('[AUTH ERROR] Google login failed:', err);
       if (err.code === 'auth/popup-blocked') {
