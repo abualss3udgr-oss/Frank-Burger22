@@ -23,6 +23,8 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Calendar,
+  Download,
 } from 'lucide-react';
 import { evaluatePasswordStrength } from '../utils/security';
 
@@ -43,6 +45,8 @@ export const UsersManagementTab: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | AdminRole>('all');
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Modal State for Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,8 +74,81 @@ export const UsersManagementTab: React.FC = () => {
 
     const matchesRole = roleFilter === 'all' || acc.role === roleFilter;
 
-    return matchesSearch && matchesRole;
+    let matchesDate = true;
+    if (startDate || endDate) {
+      if (acc.createdAt) {
+        const createdDate = new Date(acc.createdAt);
+        createdDate.setHours(0, 0, 0, 0);
+
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (createdDate < start) matchesDate = false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(0, 0, 0, 0);
+          if (createdDate > end) matchesDate = false;
+        }
+      } else {
+        matchesDate = false;
+      }
+    }
+
+    return matchesSearch && matchesRole && matchesDate;
   });
+
+  const handleExportCSV = () => {
+    if (filteredAccounts.length === 0) {
+      addToast(isAr ? 'لا توجد بيانات لتصديرها' : 'No data to export', 'error');
+      return;
+    }
+
+    // Headers
+    const headers = isAr 
+      ? ['الاسم الكامل', 'اسم المستخدم', 'البريد الإلكتروني', 'الصلاحية', 'الفرع', 'حالة المصادقة الثنائية (2FA)', 'تاريخ الإنشاء']
+      : ['Full Name', 'Username', 'Email', 'Role', 'Branch', '2FA Status', 'Created At'];
+
+    // Map rows
+    const rows = filteredAccounts.map(acc => {
+      const roleText = acc.role === 'super_admin' 
+        ? (isAr ? 'مسؤول أعلى' : 'Super Admin') 
+        : (isAr ? 'كاشير' : 'Cashier');
+      const branchText = acc.branchNameAr || (acc.role === 'super_admin' ? (isAr ? 'كافة الفروع' : 'All Branches') : (isAr ? 'فرع فريال' : 'Feryal'));
+      const mfaStatus = acc.mfaEnabled 
+        ? (isAr ? 'مفعلة ✓' : 'Active') 
+        : (isAr ? 'غير مفعلة' : 'Disabled');
+      const creationDate = acc.createdAt 
+        ? new Date(acc.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')
+        : '';
+
+      return [
+        acc.name,
+        acc.username,
+        acc.email || `${acc.username}@frankburger.com`,
+        roleText,
+        branchText,
+        mfaStatus,
+        creationDate
+      ];
+    });
+
+    // Convert to CSV string with BOM for Excel Arabic support
+    const csvContent = [
+      headers.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
+      ...rows.map(r => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `registered_users_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addToast(isAr ? 'تم تصدير ملف CSV بنجاح' : 'CSV exported successfully', 'success');
+  };
 
   const openCreateModal = () => {
     setEditingAccountId(null);
@@ -232,62 +309,117 @@ export const UsersManagementTab: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="px-5 py-3 rounded-2xl bg-[#E51E2A] hover:bg-[#c81520] text-white font-bold text-xs shadow-lg shadow-[#E51E2A]/20 transition-all flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>{isAr ? 'إضافة موظف / مستخدم جديد' : 'Add New Account'}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="px-4 py-3 rounded-2xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Download className="w-4 h-4 text-zinc-500" />
+            <span>{isAr ? 'تصدير CSV' : 'Export CSV'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="px-5 py-3 rounded-2xl bg-[#E51E2A] hover:bg-[#c81520] text-white font-bold text-xs shadow-lg shadow-[#E51E2A]/20 transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>{isAr ? 'إضافة موظف / مستخدم جديد' : 'Add New Account'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isAr ? 'بحث بالاسم، المستخدم، البريد...' : 'Search by name, user, email...'}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-900 focus:bg-white focus:border-[#E51E2A] outline-none transition-all"
-          />
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
+      <div className="bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          {/* Search */}
+          <div className="relative w-full lg:max-w-md">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isAr ? 'بحث بالاسم، اسم المستخدم، البريد الإلكتروني...' : 'Search by name, username, email...'}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-900 focus:bg-white focus:border-[#E51E2A] outline-none transition-all"
+            />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-3.5" />
+          </div>
+
+          {/* Date Filter & Clear Controls */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 py-1.5">
+              <span className="text-[10px] text-zinc-500 font-bold">{isAr ? 'من تاريخ:' : 'From:'}</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent border-none text-xs text-zinc-800 focus:outline-none cursor-pointer"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 py-1.5">
+              <span className="text-[10px] text-zinc-500 font-bold">{isAr ? 'إلى تاريخ:' : 'To:'}</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent border-none text-xs text-zinc-800 focus:outline-none cursor-pointer"
+              />
+            </div>
+            {(startDate || endDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                }}
+                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-[#E51E2A] rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+              >
+                {isAr ? 'مسح التصفية' : 'Clear Filter'}
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Role Filters */}
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          <button
-            onClick={() => setRoleFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-              roleFilter === 'all'
-                ? 'bg-zinc-900 text-white'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-            }`}
-          >
-            {isAr ? 'الكل' : 'All'} ({adminAccounts.length})
-          </button>
-          <button
-            onClick={() => setRoleFilter('super_admin')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-              roleFilter === 'super_admin'
-                ? 'bg-rose-600 text-white'
-                : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-            }`}
-          >
-            {isAr ? 'مسؤول أعلى' : 'Admin'}
-          </button>
-          <button
-            onClick={() => setRoleFilter('cashier')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-              roleFilter === 'cashier'
-                ? 'bg-amber-600 text-white'
-                : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-            }`}
-          >
-            {isAr ? 'كاشير' : 'Cashier'}
-          </button>
+        {/* Role Filters & Statistics */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-zinc-100 pt-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <button
+              onClick={() => setRoleFilter('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                roleFilter === 'all'
+                  ? 'bg-zinc-900 text-white'
+                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              {isAr ? 'الكل' : 'All'} ({adminAccounts.length})
+            </button>
+            <button
+              onClick={() => setRoleFilter('super_admin')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                roleFilter === 'super_admin'
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+              }`}
+            >
+              {isAr ? 'مسؤول أعلى' : 'Admin'}
+            </button>
+            <button
+              onClick={() => setRoleFilter('cashier')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                roleFilter === 'cashier'
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+              }`}
+            >
+              {isAr ? 'كاشير' : 'Cashier'}
+            </button>
+          </div>
+
+          <div className="text-[11px] text-zinc-500 font-medium">
+            {isAr 
+              ? `يظهر ${filteredAccounts.length} من أصل ${adminAccounts.length} مستخدم` 
+              : `Showing ${filteredAccounts.length} of ${adminAccounts.length} users`}
+          </div>
         </div>
       </div>
 
@@ -386,6 +518,22 @@ export const UsersManagementTab: React.FC = () => {
                     {acc.mfaEnabled ? (isAr ? 'مفعلة ✓' : 'Active') : (isAr ? 'غير مفعلة' : 'Disabled')}
                   </span>
                 </div>
+
+                {acc.createdAt && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 text-zinc-600 border-b border-zinc-200/30 sm:border-b-0 pb-1.5 sm:pb-0">
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>{isAr ? 'تاريخ الإنشاء:' : 'Created At:'}</span>
+                    </span>
+                    <span className="font-bold text-zinc-800 text-start sm:text-end">
+                      {new Date(acc.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                )}
 
                 {/* Password Field with Eye Toggle */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 text-zinc-600 border-t border-zinc-200/50 pt-2.5 mt-2">

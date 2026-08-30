@@ -144,6 +144,7 @@ export const CheckoutModal: React.FC = () => {
 
   const handlePlaceOrder = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (isSubmitting) return;
     if (!validate()) {
       addToast(language === 'ar' ? 'يرجى استكمال البيانات المطلوبة' : 'Please fill all required fields', 'error');
       return;

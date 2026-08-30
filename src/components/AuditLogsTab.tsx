@@ -17,11 +17,12 @@ import {
 import { AuditLogEntry, AuditAction } from '../types';
 
 export const AuditLogsTab: React.FC = () => {
-  const { auditLogs, language, addToast } = useApp();
+  const { auditLogs, language, addToast, clearAuditLogs } = useApp();
   const isAr = language === 'ar';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'SUCCESS' | 'FAILURE' | 'WARNING'>('all');
+  const [isConfirmingClear, setIsConfirmingClear] = useState(false);
 
   const filteredLogs = auditLogs.filter((log) => {
     const matchesSearch =
@@ -93,14 +94,48 @@ export const AuditLogsTab: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={exportLogsAsJSON}
-          className="px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-black text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <Download className="w-4 h-4" />
-          <span>{isAr ? 'تصدير السجل JSON' : 'Export Logs JSON'}</span>
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Clear Logs Button with inline confirmation */}
+          {isConfirmingClear ? (
+            <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 p-1 rounded-2xl animate-in fade-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={async () => {
+                  await clearAuditLogs();
+                  setIsConfirmingClear(false);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+              >
+                {isAr ? 'نعم، مسح الكل' : 'Yes, clear all'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsConfirmingClear(false)}
+                className="px-3 py-1.5 rounded-xl bg-zinc-200 hover:bg-zinc-300 text-zinc-700 font-bold text-xs transition-all cursor-pointer"
+              >
+                {isAr ? 'تراجع' : 'Cancel'}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsConfirmingClear(true)}
+              className="px-4 py-2.5 rounded-2xl border border-rose-200 hover:bg-rose-50 text-rose-600 font-bold text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{isAr ? 'تفريغ السجل' : 'Clear Audit Logs'}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={exportLogsAsJSON}
+            className="px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-black text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          >
+            <Download className="w-4 h-4" />
+            <span>{isAr ? 'تصدير السجل JSON' : 'Export Logs JSON'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search */}

@@ -33,6 +33,7 @@ import {
   CustomerInfo,
   ProductSize,
   CartItemAddon,
+  RegisteredCustomer,
   CashierShift,
   ShiftExpense,
   AuditLogEntry,
@@ -269,11 +270,6 @@ interface AppContextType {
   toasts: { id: string; message: string; type: 'success' | 'error' | 'info' }[];
   addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 
-  // Loyalty Points
-  loyaltyPoints: number;
-  addLoyaltyPoints: (amount: number) => void;
-  redeemLoyaltyPoints: (amount: number) => boolean;
-
   // Product Ratings
   updateProductRating: (productId: string, rating: number) => void;
 
@@ -301,6 +297,8 @@ interface AppContextType {
     shiftId: string,
     expense: { amount: number; reason: string; createdBy?: string }
   ) => void;
+  registeredCustomers: RegisteredCustomer[];
+  deleteRegisteredCustomer: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -689,6 +687,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
+  // Real-time listener for registered customers (website users)
+  useEffect(() => {
+    console.log('[DASHBOARD] Starting registered users listener');
+    const usersCollectionRef = collection(db, 'users');
+
+    const unsubscribeUsers = onSnapshot(
+      usersCollectionRef,
+      (snapshot) => {
+        const firestoreUsers: RegisteredCustomer[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          firestoreUsers.push({
+            id: docSnap.id,
+            name: data.name || '',
+            phone: data.phone || '',
+            email: data.email || '',
+            createdAt: data.createdAt || new Date().toISOString(),
+            favorites: data.favorites || [],
+          });
+        });
+
+        // Sort by creation date (newest first)
+        firestoreUsers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setRegisteredCustomers(firestoreUsers);
+        saveToStorage('registered_customers_v1', firestoreUsers);
+      },
+      (error) => {
+        console.error(`[DASHBOARD ERROR] Firestore Users Listener Error: ${error.message}`);
+        handleFirestoreError(error, OperationType.GET, 'users');
+      }
+    );
+
+    return () => {
+      unsubscribeUsers();
+    };
+  }, []);
+
   // Dynamic SEO & Metadata & Favicon update
   useEffect(() => {
     const isAr = language === 'ar';
@@ -999,21 +1035,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
-  // Loyalty points
-  const [loyaltyPoints, setLoyaltyPoints] = useState<number>(() => loadFromStorage('loyalty_points', 0));
-
-  const addLoyaltyPoints = (amount: number) => {
-    setLoyaltyPoints((prev) => prev + amount);
-  };
-
-  const redeemLoyaltyPoints = (amount: number) => {
-    if (loyaltyPoints >= amount) {
-      setLoyaltyPoints((prev) => prev - amount);
-      return true;
-    }
-    return false;
-  };
-
   // Toast notifications (implemented via component but state here)
   const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info' }[]>([]);
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -1025,7 +1046,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Sync to storage
-  useEffect(() => saveToStorage('loyalty_points', loyaltyPoints), [loyaltyPoints]);
   useEffect(() => saveToStorage('products_v3', products), [products]);
   useEffect(() => saveToStorage('categories_v3', categories), [categories]);
   useEffect(() => saveToStorage('addon_groups_v3', addonGroups), [addonGroups]);
@@ -1080,6 +1100,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadFromStorage('admin_accounts_v2', DEFAULT_ADMIN_ACCOUNTS)
   );
   useEffect(() => saveToStorage('admin_accounts_v2', adminAccounts), [adminAccounts]);
+
+  const [registeredCustomers, setRegisteredCustomers] = useState<RegisteredCustomer[]>(() =>
+    loadFromStorage('registered_customers_v1', [])
+  );
+  useEffect(() => saveToStorage('registered_customers_v1', registeredCustomers), [registeredCustomers]);
 
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() =>
     loadFromStorage<AdminUser | null>('admin_user', null)
@@ -1324,15 +1349,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (err) {
       console.error(`[ORDER ERROR] Failed to create order in Firestore: ${err}`);
       handleFirestoreError(err, OperationType.CREATE, `orders/${newId}`);
-    }
-
-    // Add loyalty points (1 point for every 10 EGP)
-    const pointsEarned = Math.floor(newOrder.total / 10);
-    if (pointsEarned > 0) {
-      addLoyaltyPoints(pointsEarned);
-      setTimeout(() => {
-        addToast(language === 'ar' ? `لقد ربحت ${pointsEarned} نقطة ولاء جديدة!` : `You earned ${pointsEarned} loyalty points!`, 'success');
-      }, 1500);
     }
 
     // Also update customer profile memory
@@ -2196,6 +2212,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   };
 
+  const deleteRegisteredCustomer = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'users', id));
+      addToast(language === 'ar' ? 'تم حذف حساب العميل بنجاح' : 'Customer account deleted successfully', 'success');
+    } catch (err) {
+      console.error('[DASHBOARD ERROR] Failed to delete customer:', err);
+      addToast(language === 'ar' ? 'فشل حذف حساب العميل' : 'Failed to delete customer account', 'error');
+    }
+  };
+
+  const clearAuditLogs = async () => {
+    try {
+      // Clear local state
+      setAuditLogs([]);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('frank_audit_logs_v1');
+        localStorage.removeItem('audit_logs_v2');
+      }
+
+      // Add a fresh log to note that logs were cleared
+      const clearedBy = adminUser?.username || 'system';
+      const entry = recordAuditLog({
+        action: 'USER_DELETED',
+        username: clearedBy,
+        role: adminUser?.role || 'cashier',
+        status: 'WARNING',
+        details: language === 'ar' ? 'تم تفريغ ومسح سجل العمليات والرقابة بالكامل' : 'All security audit logs were cleared',
+      });
+      setAuditLogs([entry]);
+
+      // Clear Firestore audit_logs collection documents as well
+      try {
+        const { getDocs, query, limit } = await import('firebase/firestore');
+        const q = query(collection(db, 'audit_logs'), limit(150));
+        const snap = await getDocs(q);
+        const deletePromises = snap.docs.map(docSnap => deleteDoc(doc(db, 'audit_logs', docSnap.id)));
+        await Promise.all(deletePromises);
+        // Save the new log back to Firestore
+        await setDoc(doc(db, 'audit_logs', entry.id), entry);
+      } catch (firestoreErr) {
+        console.error('[DASHBOARD ERROR] Failed to clear Firestore audit logs:', firestoreErr);
+      }
+
+      addToast(language === 'ar' ? 'تم مسح وتصفير سجل العمليات والرقابة بنجاح' : 'Audit logs cleared successfully', 'success');
+    } catch (err) {
+      console.error('[DASHBOARD ERROR] Failed to clear audit logs:', err);
+      addToast(language === 'ar' ? 'فشل مسح السجلات' : 'Failed to clear audit logs', 'error');
+    }
+  };
+
   const logoutAdmin = () => {
     if (adminUser) {
       addAuditLog('LOGOUT', `User ${adminUser.username} logged out`, adminUser.username, 'SUCCESS');
@@ -2497,15 +2563,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setOrderConfirmationOrder,
         toasts,
         addToast,
-        loyaltyPoints,
-        addLoyaltyPoints,
-        redeemLoyaltyPoints,
         updateProductRating,
         shifts,
         activeShift,
         openShift,
         closeShift,
         addShiftExpense,
+        registeredCustomers,
+        deleteRegisteredCustomer,
+        clearAuditLogs,
       }}
     >
       {children}

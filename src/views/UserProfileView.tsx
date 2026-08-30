@@ -46,7 +46,6 @@ export const UserProfileView: React.FC = () => {
     deliveryZones,
     language,
     t,
-    loyaltyPoints,
     addReview,
     updateProductRating,
     addToast
@@ -180,21 +179,10 @@ export const UserProfileView: React.FC = () => {
             </div>
 
             {/* Quick Stat Badges */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-zinc-800">
+            <div className="grid grid-cols-2 gap-3 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-zinc-800">
               
-              {/* Loyalty Points */}
-              <div className="bg-zinc-800/80 backdrop-blur-md border border-zinc-700/60 rounded-2xl p-3.5 text-center flex flex-col justify-center">
-                <div className="flex items-center justify-center gap-1.5 text-amber-400 text-xs font-bold mb-1">
-                  <Gift className="w-4 h-4" />
-                  <span>{language === 'ar' ? 'نقاط الولاء' : 'Points'}</span>
-                </div>
-                <span className="text-xl font-black font-mono text-white">
-                  {loyaltyPoints || 0}
-                </span>
-              </div>
-
               {/* Past Orders Count */}
-              <div className="bg-zinc-800/80 backdrop-blur-md border border-zinc-700/60 rounded-2xl p-3.5 text-center flex flex-col justify-center">
+              <div className="bg-zinc-800/80 backdrop-blur-md border border-zinc-700/60 rounded-2xl p-3.5 text-center flex flex-col justify-center min-w-[100px]">
                 <div className="flex items-center justify-center gap-1.5 text-red-400 text-xs font-bold mb-1">
                   <PackageCheck className="w-4 h-4" />
                   <span>{language === 'ar' ? 'الطلبات' : 'Orders'}</span>
@@ -205,7 +193,7 @@ export const UserProfileView: React.FC = () => {
               </div>
 
               {/* Favorites Count */}
-              <div className="col-span-2 sm:col-span-1 bg-zinc-800/80 backdrop-blur-md border border-zinc-700/60 rounded-2xl p-3.5 text-center flex flex-col justify-center">
+              <div className="bg-zinc-800/80 backdrop-blur-md border border-zinc-700/60 rounded-2xl p-3.5 text-center flex flex-col justify-center min-w-[100px]">
                 <div className="flex items-center justify-center gap-1.5 text-rose-400 text-xs font-bold mb-1">
                   <Heart className="w-4 h-4" />
                   <span>{language === 'ar' ? 'المفضلة' : 'Favorites'}</span>

@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Product, Order, OrderStatus, Category, Coupon, Offer, Branch, CartItem, PaymentMethod, ProductSize, CartItemAddon } from '../types';
+import { Product, Order, OrderStatus, Category, Coupon, Offer, Branch, CartItem, PaymentMethod, ProductSize, CartItemAddon, CustomerReview } from '../types';
 import { AdminLogin } from '../components/AdminLogin';
 import { PeakHoursChart } from '../components/PeakHoursChart';
 import { ShiftManagementView } from '../components/ShiftManagementView';
 import { UsersManagementTab } from '../components/UsersManagementTab';
+import { CustomersManagementTab } from '../components/CustomersManagementTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
 import { SecuritySettingsTab } from '../components/SecuritySettingsTab';
 import { soundManager } from '../utils/audio';
@@ -57,6 +58,7 @@ import {
   Banknote,
   Receipt,
   Users,
+  UserCog,
   Shield,
   Activity,
   KeyRound,
@@ -93,6 +95,8 @@ const AdminDashboard: React.FC = () => {
     updateCoupon,
     deleteCoupon,
     reviews,
+    addReview,
+    updateReview,
     toggleApproveReview,
     deleteReview,
     settings,
@@ -106,6 +110,7 @@ const AdminDashboard: React.FC = () => {
     openShift,
     closeShift,
     addShiftExpense,
+    registeredCustomers,
     language,
     syncStatus,
     addToast,
@@ -114,7 +119,7 @@ const AdminDashboard: React.FC = () => {
   const isRestricted = adminUser?.role === 'cashier';
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orders' | 'shifts' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings' | 'users' | 'audit_logs' | 'security'
+    'overview' | 'orders' | 'shifts' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings' | 'users' | 'customers' | 'audit_logs' | 'security'
   >(() => (isRestricted ? 'orders' : 'overview'));
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -1053,12 +1058,38 @@ const AdminDashboard: React.FC = () => {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Users className="w-4 h-4 shrink-0" />
-                  <span>إدارة المستخدمين والأدوار</span>
+                  <UserCog className="w-4 h-4 shrink-0" />
+                  <span>حسابات موظفي لوحة التحكم</span>
                 </div>
                 <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'users' ? 'text-zinc-900' : 'text-zinc-500'}`} />
               </button>
             )}
+
+            {/* Customers Management - Super Admin & Cashier */}
+            <button
+              onClick={() => {
+                setActiveTab('customers');
+                setIsSidebarOpen(false);
+              }}
+              className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                activeTab === 'customers'
+                  ? 'bg-[#E51E2A] text-white shadow-md'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-4 h-4 shrink-0" />
+                <span>قائمة العملاء والزبائن</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                  activeTab === 'customers' ? 'bg-white/20 text-zinc-900' : 'bg-zinc-200 text-zinc-600'
+                }`}>
+                  {registeredCustomers?.length || 0}
+                </span>
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'customers' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+              </div>
+            </button>
 
             {/* Audit Logs - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
@@ -2890,6 +2921,9 @@ const AdminDashboard: React.FC = () => {
 
       {/* Users Management Tab */}
       {activeTab === 'users' && <UsersManagementTab />}
+
+      {/* Customers Management Tab */}
+      {activeTab === 'customers' && <CustomersManagementTab />}
 
       {/* Audit Logs Tab */}
       {activeTab === 'audit_logs' && <AuditLogsTab />}

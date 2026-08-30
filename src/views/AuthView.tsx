@@ -60,11 +60,33 @@ export const AuthView: React.FC = () => {
   };
 
   const handleGoogleAuth = async () => {
+    setError('');
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      setError(getErrorMessage(err));
+      console.error('[AUTH ERROR] Google login failed:', err);
+      if (err.code === 'auth/popup-blocked') {
+        setError(
+          language === 'ar' 
+            ? 'تم حظر النافذة المنبثقة من قبل المتصفح! يرجى السماح بالنوافذ المنبثقة وإعادة المحاولة.' 
+            : 'Popup blocked by browser! Please allow popups and try again.'
+        );
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError(
+          language === 'ar'
+            ? 'هذا النطاق (Domain) غير مصرح به في إعدادات Firebase! يرجى إضافة رابط الـ GitHub Pages الخاص بك إلى قائمة "Authorized Domains" في وحدة تحكم Firebase.'
+            : 'This domain is not authorized in Firebase settings! Please add your GitHub Pages URL to the "Authorized Domains" list in your Firebase Console.'
+        );
+      } else if (window.self !== window.top) {
+        setError(
+          language === 'ar' 
+            ? 'بسبب قيود الحماية للمتصفح داخل الإطار (iframe)، يرجى فتح الموقع في علامة تبويب جديدة (علامة ↗ بالزاوية) لتسجيل الدخول بجوجل، أو استخدم البريد الإلكتروني.' 
+            : 'Due to browser security constraints inside the iframe, please open the app in a new tab (click ↗ at top right) to sign in with Google, or use email login.'
+        );
+      } else {
+        setError(getErrorMessage(err));
+      }
     }
   };
 
@@ -113,7 +135,7 @@ export const AuthView: React.FC = () => {
           className="w-full border border-zinc-200 rounded-xl p-3 focus:border-[#E51E2A] outline-none"
           required
         />
-        <button type="submit" className="w-full bg-[#E51E2A] text-white rounded-xl p-3 font-bold hover:bg-[#c81520] transition-colors">
+        <button type="submit" className="w-full bg-[#E51E2A] text-white rounded-xl p-3 font-bold hover:bg-[#c81520] transition-colors cursor-pointer">
           {isLogin ? (language === 'ar' ? 'تسجيل الدخول' : 'Login') : (language === 'ar' ? 'إنشاء حساب' : 'Create Account')}
         </button>
       </form>
@@ -129,7 +151,7 @@ export const AuthView: React.FC = () => {
 
       <button 
         onClick={handleGoogleAuth}
-        className="w-full flex items-center justify-center gap-2 border border-zinc-200 rounded-xl p-3 text-sm font-semibold hover:bg-zinc-50 transition-colors"
+        className="w-full flex items-center justify-center gap-2 border border-zinc-200 rounded-xl p-3 text-sm font-semibold hover:bg-zinc-50 transition-colors cursor-pointer"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -142,7 +164,7 @@ export const AuthView: React.FC = () => {
       
       <button 
         onClick={() => setIsLogin(!isLogin)} 
-        className="w-full text-xs text-zinc-600 mt-4 underline text-center"
+        className="w-full text-xs text-zinc-600 mt-4 underline text-center cursor-pointer"
       >
         {isLogin ? (language === 'ar' ? 'تحتاج إلى حساب؟ أنشئ حساباً' : 'Need an account? Signup') : (language === 'ar' ? 'لديك حساب بالفعل؟ سجل الدخول' : 'Already have an account? Login')}
       </button>

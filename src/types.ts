@@ -393,3 +393,13 @@ export interface AuditLogEntry {
   details?: string;
 }
 
+export interface RegisteredCustomer {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  createdAt: string;
+  favorites?: string[];
+}
+
+
