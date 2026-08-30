@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
-import { initMetaPixel, trackPageView } from './lib/pixel';
+import { initMetaPixel, initTiktokPixel, trackPageView } from './lib/pixel';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ProductModal } from './components/ProductModal';
@@ -30,8 +30,9 @@ const MainContent: React.FC = () => {
 
   useEffect(() => {
     initMetaPixel(settings?.facebookPixelId);
+    initTiktokPixel(settings?.tiktokPixelId);
     trackPageView(currentView);
-  }, [currentView, settings?.facebookPixelId]);
+  }, [currentView, settings?.facebookPixelId, settings?.tiktokPixelId]);
 
   // If in Password Reset flow
   if (currentView === 'reset-password' as any) {
