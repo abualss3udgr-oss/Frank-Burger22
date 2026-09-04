@@ -29,10 +29,10 @@ const MainContent: React.FC = () => {
   const { currentView, settings } = useApp();
 
   useEffect(() => {
-    initMetaPixel(settings?.facebookPixelId);
+    initMetaPixel(settings?.facebookPixelId, settings?.facebookTestEventCode);
     initTiktokPixel(settings?.tiktokPixelId);
     trackPageView(currentView);
-  }, [currentView, settings?.facebookPixelId, settings?.tiktokPixelId]);
+  }, [currentView, settings?.facebookPixelId, settings?.facebookTestEventCode, settings?.tiktokPixelId]);
 
   // If in Password Reset flow
   if (currentView === 'reset-password' as any) {

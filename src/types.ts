@@ -145,6 +145,7 @@ export interface Order {
   paymentProofUrl?: string; // URL for payment screenshot
   paymentStatus: 'pending' | 'paid' | 'failed';
   subtotal: number;
+  products_total?: number;
   discount: number;
   deliveryFee: number;
   tax: number;
@@ -273,6 +274,7 @@ export interface RestaurantSettings {
   rushHourMode: boolean;
   estimatedPreparationTimeMinutes: number;
   facebookPixelId: string;
+  facebookTestEventCode?: string;
   tiktokPixelId: string;
   googleAnalyticsId: string;
   // SEO & Meta Tags
@@ -400,6 +402,28 @@ export interface RegisteredCustomer {
   email: string;
   createdAt: string;
   favorites?: string[];
+}
+
+export interface BlacklistEntry {
+  id: string;
+  phone: string;
+  normalizedPhone: string;
+  customerName?: string;
+  reason?: string;
+  blockedAt: string;
+  blockedBy?: string;
+}
+
+export function normalizePhone(raw: string): string {
+  if (!raw) return '';
+  const digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('20') && digits.length === 12) {
+    return '0' + digits.slice(2);
+  }
+  if (digits.startsWith('0020') && digits.length === 14) {
+    return '0' + digits.slice(4);
+  }
+  return digits;
 }
 
 

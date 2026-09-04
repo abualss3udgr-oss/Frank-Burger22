@@ -76,6 +76,7 @@ export const CheckoutModal: React.FC = () => {
     createOrder,
     customerProfile,
     updateCustomerProfile,
+    isPhoneBlacklisted,
     language,
     addToast,
     t,
@@ -87,8 +88,16 @@ export const CheckoutModal: React.FC = () => {
   const [whatsapp, setWhatsapp] = useState(customerProfile?.whatsapp || '');
   const [orderType, setOrderType] = useState<OrderType>('delivery');
   const [selectedZoneId, setSelectedZoneId] = useState(
-    customerProfile?.deliveryZoneId || deliveryZones[0]?.id || ''
+    customerProfile?.deliveryZoneId || deliveryZones.find(z => z.isActive !== false)?.id || deliveryZones[0]?.id || ''
   );
+
+  // Sync selectedZoneId if current zone becomes inactive or changes
+  useEffect(() => {
+    const activeZones = deliveryZones.filter((z) => z.isActive !== false);
+    if (activeZones.length > 0 && !activeZones.some((z) => z.id === selectedZoneId)) {
+      setSelectedZoneId(activeZones[0].id);
+    }
+  }, [deliveryZones, selectedZoneId]);
   const [selectedBranchId, setSelectedBranchId] = useState(
     customerProfile?.pickupBranchId || branches[0]?.id || ''
   );
@@ -119,11 +128,18 @@ export const CheckoutModal: React.FC = () => {
   const isFreeDelivery = cartSubtotal >= settings.freeDeliveryThreshold;
   const deliveryFee = orderType === 'delivery' ? (isFreeDelivery ? 0 : currentZone?.fee || 20) : 0;
   const finalTotal = Math.max(0, cartSubtotal - couponDiscountAmount + deliveryFee);
+  const isCurrentPhoneBlacklisted = Boolean(phone.trim() && isPhoneBlacklisted(phone));
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = t('requiredField');
-    if (!phone.trim() || phone.trim().length < 8) errs.phone = t('requiredField');
+    if (!phone.trim() || phone.trim().length < 8) {
+      errs.phone = t('requiredField');
+    } else if (isPhoneBlacklisted(phone)) {
+      errs.phone = language === 'ar'
+        ? 'عذراً، هذا الرقم محظور من استقبال الطلبات. يرجى مراجعة إدارة المطعم.'
+        : 'Sorry, this phone number is restricted from placing orders.';
+    }
     if (orderType === 'delivery' && !streetAddress.trim()) errs.streetAddress = t('requiredField');
     if (paymentMethod === 'instapay' && !paymentProof) {
       errs.payment = language === 'ar' ? 'يرجى إرفاق صورة إيصال تحويل إنستاباي' : 'Please upload InstaPay transfer proof';
@@ -145,6 +161,17 @@ export const CheckoutModal: React.FC = () => {
   const handlePlaceOrder = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (isSubmitting) return;
+
+    if (isCurrentPhoneBlacklisted) {
+      addToast(
+        language === 'ar'
+          ? 'عذراً، هذا الرقم محظور من إرسال الطلبات بسبب بلاغات أو طلبات غير جادة سابقة.'
+          : 'Sorry, this phone number is restricted from placing orders.',
+        'error'
+      );
+      return;
+    }
+
     if (!validate()) {
       addToast(language === 'ar' ? 'يرجى استكمال البيانات المطلوبة' : 'Please fill all required fields', 'error');
       return;
@@ -189,10 +216,11 @@ export const CheckoutModal: React.FC = () => {
         paymentProofUrl,
         paymentStatus: paymentMethod === 'instapay' ? 'pending' : 'pending',
         subtotal: cartSubtotal,
+        products_total: Math.max(0, cartSubtotal - couponDiscountAmount),
         discount: couponDiscountAmount,
         deliveryFee,
         tax: 0,
-        total: finalTotal,
+        total: Math.max(0, cartSubtotal - couponDiscountAmount),
         couponCode: appliedCoupon?.code,
         estimatedDeliveryTime:
           timingType === 'now'
@@ -315,10 +343,26 @@ export const CheckoutModal: React.FC = () => {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="01012345678"
                   className={`w-full bg-white border rounded-xl py-2.5 px-3 text-xs text-zinc-900 placeholder-zinc-400 font-mono focus:outline-none focus:border-[#E51E2A] ${
-                    errors.phone ? 'border-rose-500' : 'border-zinc-300'
+                    isCurrentPhoneBlacklisted
+                      ? 'border-rose-500 bg-rose-50/40 text-rose-900 ring-2 ring-rose-500/20'
+                      : errors.phone
+                      ? 'border-rose-500'
+                      : 'border-zinc-300'
                   }`}
                 />
-                {errors.phone && <p className="text-[10px] text-rose-500 font-medium mt-1">{errors.phone}</p>}
+                {isCurrentPhoneBlacklisted && (
+                  <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px] leading-relaxed flex items-start gap-1.5">
+                    <span className="font-bold shrink-0">⚠️ محظور:</span>
+                    <span>
+                      {language === 'ar'
+                        ? 'هذا الرقم محظور حالياً من إرسال الطلبات بسبب بلاغات غير جادة سابقة. يرجى التواصل مع إدارة المطعم مباشرة لحل المشكلة.'
+                        : 'This phone number is currently blocked from placing orders. Please contact management.'}
+                    </span>
+                  </div>
+                )}
+                {!isCurrentPhoneBlacklisted && errors.phone && (
+                  <p className="text-[10px] text-rose-500 font-medium mt-1">{errors.phone}</p>
+                )}
               </div>
             </div>
 
@@ -351,7 +395,7 @@ export const CheckoutModal: React.FC = () => {
                   onChange={(e) => setSelectedZoneId(e.target.value)}
                   className="w-full bg-white border border-zinc-300 rounded-xl py-2.5 px-3 text-xs text-zinc-900 focus:outline-none focus:border-[#E51E2A]"
                 >
-                  {deliveryZones.map((zone) => (
+                  {deliveryZones.filter((z) => z.isActive !== false).map((zone) => (
                     <option key={zone.id} value={zone.id}>
                       {language === 'ar' ? zone.nameAr : zone.nameEn} — {zone.fee} {t('currency')} (
                       {zone.estimatedMinutes})
@@ -608,19 +652,28 @@ export const CheckoutModal: React.FC = () => {
         </form>
 
         {/* Modal Action Bar */}
-        <div className="p-4 sm:p-5 bg-white border-t border-zinc-200 flex items-center justify-between gap-4 shrink-0">
+        <div className="p-4 sm:p-5 bg-white border-t border-zinc-200 flex items-center justify-between gap-3 sm:gap-4 shrink-0">
           <div>
-            <div className="text-[11px] text-zinc-500 font-semibold">{t('total')}</div>
-            <div className="text-xl font-black text-zinc-900 font-mono">
-              {finalTotal} <span className="text-xs text-[#E51E2A] font-bold">{t('currency')}</span>
+            <div className="text-[11px] text-zinc-500 font-semibold">
+              {language === 'ar' ? 'قيمة الطلب' : 'Order Value'}
             </div>
+            <div className="text-xl font-black text-zinc-900 font-mono flex items-baseline gap-1">
+              <span>{Math.max(0, cartSubtotal - couponDiscountAmount)}</span>
+              <span className="text-xs text-[#E51E2A] font-bold">{t('currency')}</span>
+            </div>
+            {orderType === 'delivery' && (
+              <div className="text-[11px] text-zinc-500 font-medium mt-0.5 flex items-center gap-1">
+                <span>{language === 'ar' ? '+ خدمة التوصيل:' : '+ Delivery:'}</span>
+                <span className="font-bold text-zinc-800 font-mono">{deliveryFee} {t('currency')}</span>
+              </div>
+            )}
           </div>
 
           <button
             type="button"
             onClick={handlePlaceOrder}
-            disabled={isSubmitting}
-            className="flex-grow py-3.5 px-6 rounded-xl bg-[#E51E2A] hover:bg-[#c41420] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-[#E51E2A]/20 transition-all transform active:scale-98 disabled:opacity-50 cursor-pointer"
+            disabled={isSubmitting || isCurrentPhoneBlacklisted}
+            className="flex-grow py-3.5 px-5 rounded-xl bg-[#E51E2A] hover:bg-[#c41420] text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-[#E51E2A]/20 transition-all transform active:scale-98 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? (
               <span>{t('submittingOrder')}</span>

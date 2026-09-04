@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
@@ -16,6 +16,19 @@ export const MenuView: React.FC = () => {
   } = useApp();
 
   const [sortBy, setSortBy] = useState<'default' | 'price_low' | 'price_high' | 'popular'>('default');
+  const categoryContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll the active category pill into view
+  useEffect(() => {
+    if (categoryContainerRef.current) {
+      const activeBtn = categoryContainerRef.current.querySelector(
+        `[data-category-id="${activeMenuCategory}"]`
+      ) as HTMLElement | null;
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeMenuCategory]);
 
   // Filter and sort
   const filteredProducts = useMemo(() => {
@@ -104,8 +117,9 @@ export const MenuView: React.FC = () => {
       <div className="space-y-4 pt-4">
         <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
           {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none flex-1">
+          <div ref={categoryContainerRef} className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none flex-1">
             <button
+              data-category-id="all"
               onClick={() => setActiveMenuCategory('all')}
               className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer shadow-sm ${
                 activeMenuCategory === 'all'
@@ -126,6 +140,7 @@ export const MenuView: React.FC = () => {
                 return (
                   <button
                     key={cat.id}
+                    data-category-id={cat.id}
                     onClick={() => setActiveMenuCategory(cat.id)}
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer flex items-center gap-2 shadow-sm ${
                       isSelected

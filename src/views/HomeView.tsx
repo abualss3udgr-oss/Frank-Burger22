@@ -55,6 +55,7 @@ export const HomeView: React.FC = () => {
     offers,
     setCurrentView,
     setActiveMenuCategory,
+    setSearchQuery,
     addToCart,
     language,
     t,
@@ -249,7 +250,12 @@ export const HomeView: React.FC = () => {
             return (
               <button
                 key={cat.id}
-                onClick={() => { setActiveMenuCategory(cat.id); setActiveMenuCategory('all'); setCurrentView('menu'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveMenuCategory(cat.id);
+                  setCurrentView('menu');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="group relative aspect-square sm:aspect-[4/5] w-full rounded-3xl overflow-hidden bg-zinc-100 cursor-pointer text-start flex flex-col justify-end"
               >
                 <img

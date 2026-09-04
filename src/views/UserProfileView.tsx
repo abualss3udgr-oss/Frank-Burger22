@@ -572,9 +572,9 @@ export const UserProfileView: React.FC = () => {
                     onChange={(e) => setDeliveryZoneId(e.target.value)}
                     className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 px-3.5 text-xs text-zinc-900 focus:outline-none focus:border-[#E51E2A] focus:bg-white transition-all"
                   >
-                    {deliveryZones.map((z) => (
+                    {deliveryZones.filter((z) => z.isActive !== false).map((z) => (
                       <option key={z.id} value={z.id}>
-                        {language === 'ar' ? z.nameAr : z.nameEn} - ({z.deliveryFee} {t('currency')})
+                        {language === 'ar' ? z.nameAr : z.nameEn} - ({z.fee ?? (z as any).deliveryFee} {t('currency')})
                       </option>
                     ))}
                   </select>

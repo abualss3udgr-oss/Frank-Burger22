@@ -34,6 +34,8 @@ import {
   ProductSize,
   CartItemAddon,
   RegisteredCustomer,
+  BlacklistEntry,
+  normalizePhone,
   CashierShift,
   ShiftExpense,
   AuditLogEntry,
@@ -178,6 +180,7 @@ interface AppContextType {
   addDeliveryZone: (zone: Omit<DeliveryZone, 'id'>) => void;
   updateDeliveryZone: (id: string, zone: Partial<DeliveryZone>) => void;
   deleteDeliveryZone: (id: string) => void;
+  resetDeliveryZones: () => void;
 
   addBranch: (branch: Omit<Branch, 'id'>) => void;
   updateBranch: (id: string, branch: Partial<Branch>) => void;
@@ -299,6 +302,15 @@ interface AppContextType {
   ) => void;
   registeredCustomers: RegisteredCustomer[];
   deleteRegisteredCustomer: (id: string) => Promise<void>;
+
+  // Blacklist
+  blacklist: BlacklistEntry[];
+  addToBlacklist: (phone: string, reason?: string, customerName?: string) => Promise<void>;
+  removeFromBlacklist: (idOrPhone: string) => Promise<void>;
+  isPhoneBlacklisted: (phone: string) => boolean;
+
+  // Sales & Products Calculation Helpers
+  getOrderProductsTotal: (order: Order) => number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -426,6 +438,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [offers, setOffers] = useState<Offer[]>(() => loadFromStorage('offers_v3', INITIAL_OFFERS));
   const [coupons, setCoupons] = useState<Coupon[]>(() => loadFromStorage('coupons_v3', INITIAL_COUPONS));
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>(() => loadFromStorage('zones_v2', INITIAL_DELIVERY_ZONES));
+  const [blacklist, setBlacklist] = useState<BlacklistEntry[]>(() => loadFromStorage('blacklist_v1', []));
   const [branches, setBranches] = useState<Branch[]>(() => loadFromStorage('branches_v2', INITIAL_BRANCHES));
   const [reviews, setReviews] = useState<CustomerReview[]>(() => loadFromStorage('reviews_v3', INITIAL_REVIEWS));
   const [settings, setSettings] = useState<RestaurantSettings>(() => {
@@ -684,6 +697,76 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return () => {
       unsubscribeSettings();
+    };
+  }, []);
+
+  // Delivery Zones real-time synchronization with Firestore
+  useEffect(() => {
+    console.log('[DASHBOARD] Starting delivery zones listener');
+    const zonesDocRef = doc(db, 'settings', 'delivery_zones');
+
+    const unsubscribeZones = onSnapshot(
+      zonesDocRef,
+      async (docSnap) => {
+        if (!docSnap.exists()) {
+          console.log('[DASHBOARD] Firestore settings/delivery_zones document is empty. Seeding INITIAL_DELIVERY_ZONES...');
+          try {
+            await setDoc(zonesDocRef, { list: INITIAL_DELIVERY_ZONES });
+            console.log('[DASHBOARD] INITIAL_DELIVERY_ZONES seeded successfully in Firestore.');
+          } catch (err) {
+            console.error('[DASHBOARD ERROR] Failed to seed initial delivery zones:', err);
+          }
+          return;
+        }
+
+        const data = docSnap.data();
+        if (data && Array.isArray(data.list) && data.list.length > 0) {
+          console.log(`[DASHBOARD] Received ${data.list.length} delivery zones from Firestore`);
+          setDeliveryZones(data.list);
+          saveToStorage('zones_v2', data.list);
+        }
+      },
+      (error) => {
+        console.error(`[DASHBOARD ERROR] Firestore Delivery Zones Listener Error: ${error.message}`);
+      }
+    );
+
+    return () => {
+      unsubscribeZones();
+    };
+  }, []);
+
+  // Blacklist real-time synchronization with Firestore
+  useEffect(() => {
+    console.log('[DASHBOARD] Starting blacklist listener');
+    const blacklistDocRef = doc(db, 'settings', 'blacklist');
+
+    const unsubscribeBlacklist = onSnapshot(
+      blacklistDocRef,
+      async (docSnap) => {
+        if (!docSnap.exists()) {
+          try {
+            await setDoc(blacklistDocRef, { list: [] });
+          } catch (err) {
+            console.error('[DASHBOARD ERROR] Failed to initialize blacklist in Firestore:', err);
+          }
+          return;
+        }
+
+        const data = docSnap.data();
+        if (data && Array.isArray(data.list)) {
+          console.log(`[DASHBOARD] Received ${data.list.length} blacklisted numbers from Firestore`);
+          setBlacklist(data.list);
+          saveToStorage('blacklist_v1', data.list);
+        }
+      },
+      (error) => {
+        console.error(`[DASHBOARD ERROR] Firestore Blacklist Listener Error: ${error.message}`);
+      }
+    );
+
+    return () => {
+      unsubscribeBlacklist();
     };
   }, []);
 
@@ -1052,6 +1135,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => saveToStorage('offers_v3', offers), [offers]);
   useEffect(() => saveToStorage('coupons_v3', coupons), [coupons]);
   useEffect(() => saveToStorage('zones_v2', deliveryZones), [deliveryZones]);
+  useEffect(() => saveToStorage('blacklist_v1', blacklist), [blacklist]);
   useEffect(() => saveToStorage('branches_v2', branches), [branches]);
   useEffect(() => saveToStorage('reviews_v3', reviews), [reviews]);
   useEffect(() => saveToStorage('settings_v2', settings), [settings]);
@@ -2413,17 +2497,112 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Delivery Zones CRUD
+  const syncZonesToFirestore = async (zonesList: DeliveryZone[]) => {
+    try {
+      await setDoc(doc(db, 'settings', 'delivery_zones'), { list: zonesList }, { merge: true });
+    } catch (err) {
+      console.error('[DASHBOARD] Failed to sync delivery zones to Firestore:', err);
+    }
+  };
+
   const addDeliveryZone = (zone: Omit<DeliveryZone, 'id'>) => {
     const newZone: DeliveryZone = { ...zone, id: `zone-${Date.now()}` };
-    setDeliveryZones((prev) => [...prev, newZone]);
+    setDeliveryZones((prev) => {
+      const next = [...prev, newZone];
+      saveToStorage('zones_v2', next);
+      syncZonesToFirestore(next);
+      return next;
+    });
   };
 
   const updateDeliveryZone = (id: string, patch: Partial<DeliveryZone>) => {
-    setDeliveryZones((prev) => prev.map((z) => (z.id === id ? { ...z, ...patch } : z)));
+    setDeliveryZones((prev) => {
+      const next = prev.map((z) => (z.id === id ? { ...z, ...patch } : z));
+      saveToStorage('zones_v2', next);
+      syncZonesToFirestore(next);
+      return next;
+    });
   };
 
   const deleteDeliveryZone = (id: string) => {
-    setDeliveryZones((prev) => prev.filter((z) => z.id !== id));
+    setDeliveryZones((prev) => {
+      const next = prev.filter((z) => z.id !== id);
+      saveToStorage('zones_v2', next);
+      syncZonesToFirestore(next);
+      return next;
+    });
+  };
+
+  const resetDeliveryZones = () => {
+    setDeliveryZones(INITIAL_DELIVERY_ZONES);
+    saveToStorage('zones_v2', INITIAL_DELIVERY_ZONES);
+    syncZonesToFirestore(INITIAL_DELIVERY_ZONES);
+  };
+
+  // Blacklist Management
+  const syncBlacklistToFirestore = async (list: BlacklistEntry[]) => {
+    try {
+      await setDoc(doc(db, 'settings', 'blacklist'), { list }, { merge: true });
+    } catch (err) {
+      console.error('[DASHBOARD] Failed to sync blacklist to Firestore:', err);
+    }
+  };
+
+  const addToBlacklist = async (phone: string, reason?: string, customerName?: string) => {
+    const norm = normalizePhone(phone);
+    if (!norm) return;
+    const newEntry: BlacklistEntry = {
+      id: `bl-${Date.now()}`,
+      phone: phone.trim(),
+      normalizedPhone: norm,
+      customerName: customerName?.trim(),
+      reason: reason?.trim() || 'طلب وهمي / سلوك غير جاد',
+      blockedAt: new Date().toISOString(),
+      blockedBy: adminUser?.username || 'الإدارة',
+    };
+
+    setBlacklist((prev) => {
+      const filtered = prev.filter((b) => b.normalizedPhone !== norm);
+      const updated = [newEntry, ...filtered];
+      saveToStorage('blacklist_v1', updated);
+      syncBlacklistToFirestore(updated);
+      return updated;
+    });
+    addToast(language === 'ar' ? `تم حظر الرقم ${phone} وإضافته للبلاك ليست` : `Phone ${phone} added to blacklist`, 'error');
+  };
+
+  const removeFromBlacklist = async (idOrPhone: string) => {
+    const norm = normalizePhone(idOrPhone);
+    setBlacklist((prev) => {
+      const updated = prev.filter((b) => b.id !== idOrPhone && b.normalizedPhone !== norm && b.phone !== idOrPhone);
+      saveToStorage('blacklist_v1', updated);
+      syncBlacklistToFirestore(updated);
+      return updated;
+    });
+    addToast(language === 'ar' ? 'تم إلغاء الحظر عن الرقم بنجاح' : 'Phone unblocked successfully', 'success');
+  };
+
+  const isPhoneBlacklisted = (phone: string): boolean => {
+    if (!phone) return false;
+    const norm = normalizePhone(phone);
+    if (!norm) return false;
+    return blacklist.some((b) => b.normalizedPhone === norm || normalizePhone(b.phone) === norm);
+  };
+
+  // Pure products total (excluding delivery fee)
+  const getOrderProductsTotal = (order: Order): number => {
+    if (typeof order.products_total === 'number' && order.products_total > 0) {
+      return order.products_total;
+    }
+    const fee = order.deliveryFee || 0;
+    if (fee > 0 && order.total > fee) {
+      return order.total - fee;
+    }
+    if (order.items && order.items.length > 0) {
+      const itemsSum = order.items.reduce((s, it) => s + ((it as any).itemTotal || (it.product.price * it.quantity)), 0);
+      if (itemsSum > 0) return itemsSum;
+    }
+    return Math.max(0, order.total - fee);
   };
 
   // Branches CRUD
@@ -2555,6 +2734,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addDeliveryZone,
         updateDeliveryZone,
         deleteDeliveryZone,
+        resetDeliveryZones,
         addBranch,
         updateBranch,
         deleteBranch,
@@ -2633,6 +2813,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addShiftExpense,
         registeredCustomers,
         deleteRegisteredCustomer,
+        blacklist,
+        addToBlacklist,
+        removeFromBlacklist,
+        isPhoneBlacklisted,
+        getOrderProductsTotal,
         clearAuditLogs,
       }}
     >

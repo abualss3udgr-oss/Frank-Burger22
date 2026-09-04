@@ -1236,6 +1236,7 @@ export const INITIAL_SETTINGS: RestaurantSettings = {
   rushHourMode: false,
   estimatedPreparationTimeMinutes: 25,
   facebookPixelId: '',
+  facebookTestEventCode: '',
   tiktokPixelId: '',
   googleAnalyticsId: '',
   // SEO & Meta Defaults

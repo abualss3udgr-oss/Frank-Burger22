@@ -8,6 +8,10 @@ import { UsersManagementTab } from '../components/UsersManagementTab';
 import { CustomersManagementTab } from '../components/CustomersManagementTab';
 import { AuditLogsTab } from '../components/AuditLogsTab';
 import { SecuritySettingsTab } from '../components/SecuritySettingsTab';
+import { PixelTrackerSettings } from '../components/PixelTrackerSettings';
+import { DeliveryZonesManager } from '../components/DeliveryZonesManager';
+import { SalesAnalyticsView } from '../components/SalesAnalyticsView';
+import { BlacklistManager } from '../components/BlacklistManager';
 import { soundManager } from '../utils/audio';
 import {
   LayoutDashboard,
@@ -64,6 +68,9 @@ import {
   KeyRound,
   Globe,
   Menu,
+  BarChart3,
+  UserX,
+  ShieldAlert,
 } from 'lucide-react';
 
 // Sound alert helper using SoundEffects with auto-unlocked AudioContext & rich multi-part bell chime
@@ -114,12 +121,17 @@ const AdminDashboard: React.FC = () => {
     language,
     syncStatus,
     addToast,
+    deliveryZones,
+    blacklist,
+    addToBlacklist,
+    isPhoneBlacklisted,
+    getOrderProductsTotal,
   } = useApp();
 
   const isRestricted = adminUser?.role === 'cashier';
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'orders' | 'shifts' | 'products' | 'categories' | 'coupons' | 'reviews' | 'settings' | 'users' | 'customers' | 'audit_logs' | 'security'
+    'overview' | 'orders' | 'shifts' | 'sales_reports' | 'products' | 'categories' | 'coupons' | 'reviews' | 'delivery_zones' | 'settings' | 'users' | 'customers' | 'blacklist' | 'audit_logs' | 'security'
   >(() => (isRestricted ? 'orders' : 'overview'));
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -911,6 +923,27 @@ const AdminDashboard: React.FC = () => {
               </button>
             )}
 
+            {/* Sales & Product Popularity Reports - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
+              <button
+                onClick={() => {
+                  setActiveTab('sales_reports');
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer relative ${
+                  activeTab === 'sales_reports'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="w-4 h-4 shrink-0" />
+                  <span>تقارير المبيعات والأصناف</span>
+                </div>
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'sales_reports' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+              </button>
+            )}
+
             {/* Products - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
@@ -1023,6 +1056,34 @@ const AdminDashboard: React.FC = () => {
               </button>
             )}
 
+            {/* Delivery Zones - Super Admin Only */}
+            {adminUser?.role === 'super_admin' && (
+              <button
+                onClick={() => {
+                  setActiveTab('delivery_zones');
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                  activeTab === 'delivery_zones'
+                    ? 'bg-[#E51E2A] text-white shadow-md'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Bike className="w-4 h-4 shrink-0" />
+                  <span>مناطق وأسعار التوصيل</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                    activeTab === 'delivery_zones' ? 'bg-white/20 text-zinc-900' : 'bg-zinc-200 text-zinc-600'
+                  }`}>
+                    {deliveryZones.length}
+                  </span>
+                  <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'delivery_zones' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+                </div>
+              </button>
+            )}
+
             {/* Settings - Super Admin Only */}
             {adminUser?.role === 'super_admin' && (
               <button
@@ -1088,6 +1149,34 @@ const AdminDashboard: React.FC = () => {
                   {registeredCustomers?.length || 0}
                 </span>
                 <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'customers' ? 'text-zinc-900' : 'text-zinc-500'}`} />
+              </div>
+            </button>
+
+            {/* Blacklist Management - Super Admin & Cashier */}
+            <button
+              onClick={() => {
+                setActiveTab('blacklist');
+                setIsSidebarOpen(false);
+              }}
+              className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                activeTab === 'blacklist'
+                  ? 'bg-rose-600 text-white shadow-md'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 bg-zinc-50/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <UserX className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>القائمة السوداء (Blacklist)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {blacklist.length > 0 && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                    activeTab === 'blacklist' ? 'bg-white text-rose-700' : 'bg-rose-100 text-rose-700'
+                  }`}>
+                    {blacklist.length}
+                  </span>
+                )}
+                <ChevronLeft className={`w-3.5 h-3.5 ${activeTab === 'blacklist' ? 'text-zinc-900' : 'text-zinc-500'}`} />
               </div>
             </button>
 
@@ -1347,6 +1436,48 @@ const AdminDashboard: React.FC = () => {
                   الواتساب، الفروع، والضريبة
                 </div>
               </button>
+
+              <button
+                onClick={() => setActiveTab('sales_reports')}
+                className="p-3 rounded-xl bg-emerald-50/60 hover:bg-emerald-100/60 border border-emerald-200 text-start transition-all cursor-pointer group col-span-1 sm:col-span-2"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    جديد 📊
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-zinc-900 group-hover:text-emerald-700 transition-colors">
+                  إجمالي المبيعات وترتيب الأصناف (الأكثر والأقل طلباً)
+                </div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">
+                  احتساب صافي المبيعات بدون رسوم التوصيل وتحديد فترات زمنية مخصصة
+                </div>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('blacklist')}
+                className="p-3 rounded-xl bg-rose-50/60 hover:bg-rose-100/60 border border-rose-200 text-start transition-all cursor-pointer group col-span-1 sm:col-span-2"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center">
+                    <UserX className="w-4 h-4" />
+                  </div>
+                  {blacklist.length > 0 && (
+                    <span className="text-[10px] font-mono font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                      {blacklist.length} أرقام محظورة
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs font-bold text-zinc-900 group-hover:text-rose-700 transition-colors">
+                  إدارة القائمة السوداء (Blacklist)
+                </div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">
+                  حظر الأرقام المسيئة ومنع استقبال الطلبات الوهمية
+                </div>
+              </button>
             </div>
           </div>
 
@@ -1409,8 +1540,13 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex items-center gap-3 self-end sm:self-center">
                       <div className="text-end">
                         <div className="font-mono font-black text-zinc-900 text-sm">
-                          {o.total} <span className="text-[10px] text-[#E51E2A] font-sans">ج.م</span>
+                          {o.products_total ?? (o.deliveryFee > 0 && o.total > o.deliveryFee ? o.total - o.deliveryFee : o.total)} <span className="text-[10px] text-[#E51E2A] font-sans">ج.م</span>
                         </div>
+                        {o.deliveryFee > 0 && (
+                          <div className="text-[10px] text-zinc-500 font-mono font-semibold">
+                            + {o.deliveryFee} ج توصيل
+                          </div>
+                        )}
                         <div className="text-[10px] text-zinc-500">
                           {getPaymentMethodNameAr(o.paymentMethod)}
                         </div>
@@ -1662,10 +1798,10 @@ const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Phone & Instant WhatsApp */}
+                      {/* Phone & Instant WhatsApp & Blacklist Action */}
                       <div>
                         <span className="text-zinc-500 block text-[10px] font-semibold mb-0.5">رقم الهاتف والتواصل:</span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           <a
                             href={`tel:${order.customer?.phone || ''}`}
                             className="text-[#E51E2A] hover:underline font-mono font-bold flex items-center gap-1 bg-white px-2 py-0.5 rounded-lg border border-zinc-200"
@@ -1684,6 +1820,28 @@ const AdminDashboard: React.FC = () => {
                             >
                               <MessageCircle className="w-3.5 h-3.5" />
                             </a>
+                          )}
+
+                          {order.customer?.phone && (
+                            isPhoneBlacklisted(order.customer.phone) ? (
+                              <span className="text-[10px] bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded border border-rose-200">
+                                🚫 محظور
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (order.customer?.phone && window.confirm(`هل أنت متأكد من حظر رقم ${order.customer.phone} وإضافته للقائمة السوداء؟`)) {
+                                    addToBlacklist(order.customer.phone, 'طلب وهمي / ملغي من لوحة التحكم', order.customer.name);
+                                  }
+                                }}
+                                title="حظر هذا الرقم لمنع الطلبات الوهمية"
+                                className="px-1.5 py-0.5 rounded-md text-zinc-500 hover:text-rose-600 hover:bg-rose-50 transition-colors text-[10px] font-bold border border-zinc-200 bg-white flex items-center gap-1 cursor-pointer"
+                              >
+                                <UserX className="w-3 h-3 text-rose-500" />
+                                <span>حظر</span>
+                              </button>
+                            )
                           )}
                         </div>
                       </div>
@@ -1787,12 +1945,33 @@ const AdminDashboard: React.FC = () => {
                           </>
                         )}
 
-                        <div className="h-6 w-px bg-[#262630]" />
+                        <div className="h-6 w-px bg-zinc-200" />
 
                         <div>
-                          <span className="text-zinc-500 text-[10px] block">الإجمالي الكلي:</span>
+                          <span className="text-zinc-500 text-[10px] block">قيمة المنتجات:</span>
+                          <span className="text-sm font-bold text-zinc-900 font-mono">
+                            {order.products_total ?? (order.deliveryFee > 0 && order.total > order.deliveryFee ? order.total - order.deliveryFee : order.total)} <span className="text-[10px] text-zinc-500 font-sans">ج</span>
+                          </span>
+                        </div>
+
+                        {order.deliveryFee > 0 && (
+                          <>
+                            <div className="h-6 w-px bg-zinc-200" />
+                            <div>
+                              <span className="text-zinc-500 text-[10px] block">خدمة التوصيل:</span>
+                              <span className="text-sm font-bold text-blue-600 font-mono">
+                                + {order.deliveryFee} <span className="text-[10px] text-zinc-500 font-sans">ج</span>
+                              </span>
+                            </div>
+                          </>
+                        )}
+
+                        <div className="h-6 w-px bg-zinc-200" />
+
+                        <div>
+                          <span className="text-zinc-500 text-[10px] block font-bold">الإجمالي للتحصيل:</span>
                           <span className="text-base font-black text-zinc-900 font-mono">
-                            {order.total} <span className="text-xs text-[#E51E2A] font-sans font-bold">جنيه</span>
+                            {(order.products_total ?? (order.deliveryFee > 0 && order.total > order.deliveryFee ? order.total - order.deliveryFee : order.total)) + (order.deliveryFee || 0)} <span className="text-xs text-[#E51E2A] font-sans font-bold">جنيه</span>
                           </span>
                         </div>
                       </div>
@@ -1906,6 +2085,13 @@ const AdminDashboard: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'shifts' && (
         <ShiftManagementView />
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: SALES REPORTS & PRODUCT POPULARITY RANKING */}
+      {/* ========================================================================= */}
+      {activeTab === 'sales_reports' && (
+        <SalesAnalyticsView />
       )}
 
       {/* ========================================================================= */}
@@ -2836,50 +3022,7 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Tracking Settings */}
-          <div className="bg-white border border-zinc-200 rounded-2xl p-5 space-y-4 shadow-md">
-            <h2 className="text-base font-bold text-zinc-900 font-heading flex items-center gap-2">
-              <LinkIcon className="w-4 h-4 text-emerald-400" />
-              <span>إعدادات التتبع والتحليلات (Pixels/Codes)</span>
-            </h2>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-zinc-700 mb-1">
-                  Facebook Pixel ID:
-                </label>
-                <input
-                  type="text"
-                  value={settings.facebookPixelId || ''}
-                  onChange={(e) => updateSettings({ facebookPixelId: e.target.value })}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 font-mono outline-none focus:border-[#E51E2A]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-zinc-700 mb-1">
-                  TikTok Pixel ID:
-                </label>
-                <input
-                  type="text"
-                  value={settings.tiktokPixelId || ''}
-                  onChange={(e) => updateSettings({ tiktokPixelId: e.target.value })}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 font-mono outline-none focus:border-[#E51E2A]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-zinc-700 mb-1">
-                  Google Analytics ID:
-                </label>
-                <input
-                  type="text"
-                  value={settings.googleAnalyticsId || ''}
-                  onChange={(e) => updateSettings({ googleAnalyticsId: e.target.value })}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2 px-3 text-zinc-900 font-mono outline-none focus:border-[#E51E2A]"
-                />
-              </div>
-            </div>
-          </div>
+          <PixelTrackerSettings />
 
           {/* Branches Manager */}
           <div className="bg-white border border-zinc-200 rounded-2xl p-5 space-y-4 shadow-md">
@@ -2916,14 +3059,25 @@ const AdminDashboard: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Delivery Zones Manager embedded in Settings */}
+          <div className="col-span-1 lg:col-span-2">
+            <DeliveryZonesManager />
+          </div>
         </div>
       )}
+
+      {/* Delivery Zones Dedicated Tab */}
+      {activeTab === 'delivery_zones' && <DeliveryZonesManager />}
 
       {/* Users Management Tab */}
       {activeTab === 'users' && <UsersManagementTab />}
 
       {/* Customers Management Tab */}
       {activeTab === 'customers' && <CustomersManagementTab />}
+
+      {/* Blacklist Management Tab */}
+      {activeTab === 'blacklist' && <BlacklistManager />}
 
       {/* Audit Logs Tab */}
       {activeTab === 'audit_logs' && <AuditLogsTab />}
